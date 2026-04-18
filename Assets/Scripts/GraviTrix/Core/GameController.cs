@@ -37,6 +37,7 @@ namespace GraviTrix.Core
         private List<int> pendingLineRowsToClear = new List<int>();
         private HashSet<Vector2Int> hiddenCells = new HashSet<Vector2Int>();
         private bool pendingIsRotation;
+        private int rescueCooldown;
 
         public int Score => score;
         public GamePhase Phase => phase;
@@ -124,6 +125,7 @@ namespace GraviTrix.Core
             comboCount = 0;
             pendingLineRowsToClear.Clear();
             hiddenCells.Clear();
+            rescueCooldown = 0;
             if (config == null)
             {
                 phase = GamePhase.GameOver;
@@ -253,7 +255,40 @@ namespace GraviTrix.Core
             }
 
             activePiece = nextPiece;
-            nextPiece = FallbackPieceFactory.CreateRandom(GetSpawnOrigin());
+            
+            // Rescue Mechanic: Check central 4x4 area
+            int centerOccupied = 0;
+            int startX = (board.Width / 2) - 2;
+            int startY = (board.Height / 2) - 2;
+            
+            for (int x = startX; x < startX + 4; x++)
+            {
+                for (int y = startY; y < startY + 4; y++)
+                {
+                    if (board.IsOccupied(new Vector2Int(x, y)))
+                    {
+                        centerOccupied++;
+                    }
+                }
+            }
+
+            if (rescueCooldown > 0)
+            {
+                rescueCooldown--;
+            }
+
+            bool isLavaInPlay = (activePiece != null && activePiece.ContainsKind(BlockKind.Lava)) ||
+                                (heldPiece != null && heldPiece.ContainsKind(BlockKind.Lava));
+
+            if (centerOccupied >= 6 && rescueCooldown <= 0 && !isLavaInPlay)
+            {
+                nextPiece = FallbackPieceFactory.CreateLava(GetSpawnOrigin());
+                rescueCooldown = 4; // Must drop 4 normal pieces before another rescue lava
+            }
+            else
+            {
+                nextPiece = FallbackPieceFactory.CreateRandom(GetSpawnOrigin());
+            }
 
             if (activePiece == null)
             {

@@ -67,6 +67,6 @@
         "*.sln": "*.csproj",
         "*.slnx": "*.csproj"
     },
-    "dotnet.defaultSolution": "GraviTrix.slnx",
+    "dotnet.defaultSolution": "GraviTrixOld.slnx",
     "dotnet.enableWorkspaceBasedDevelopment": false
 }

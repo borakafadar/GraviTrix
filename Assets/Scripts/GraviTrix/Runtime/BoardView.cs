@@ -65,62 +65,102 @@ namespace GraviTrix.Runtime
                 }
             }
 
-            if (heldPiece != null)
+            // Always render HOLD box
+            RenderPreviewBox("HOLD", 1.5f, 4.0f, heldPiece, board);
+
+            // Always render NEXT box
+            float nextX = (board != null ? board.Width - 2.5f : 8.5f);
+            RenderPreviewBox("NEXT", nextX, 4.0f, nextPiece, board);
+        }
+
+        private void RenderPreviewBox(string label, float xBoardPos, float yBoardPos, PieceInstance piece, BoardGrid board)
+        {
+            float centerX = xBoardPos * cellSize + cachedBoardOffset.x;
+            float centerY = yBoardPos * cellSize + cachedBoardOffset.y;
+            
+            float bgSize = cellSize * 3f; 
+            Vector3 bgPos = new Vector3(centerX, centerY, 5f);
+            
+            // Outer Box (Border) - sortingOrder -6 to prevent Z-fighting
+            SpawnBackgroundBox(bgPos, new Vector2(bgSize + 0.15f * cellSize, bgSize + 0.15f * cellSize), new Color(0.4f, 0.25f, 0.6f, 1f), transform, -6);
+            
+            // Inner Box - sortingOrder -5
+            SpawnBackgroundBox(bgPos, new Vector2(bgSize, bgSize), new Color(0.12f, 0.12f, 0.15f, 1f), transform, -5);
+            
+            // Text Label
+            SpawnLabel(label, new Vector3(centerX, centerY + bgSize * 0.5f - 0.35f * cellSize, 0f), transform);
+
+            // Piece Cells
+            if (piece != null)
             {
-                Vector2Int heldOrigin = new Vector2Int(0, -4);
-                
-                float hx = 0 * cellSize + cachedBoardOffset.x + cellSize;
-                float hy = -(-5) * cellSize + cachedBoardOffset.y;
-                
-                float bgSize = cellSize * 5f;
-                Vector3 bgPos = new Vector3(hx - 0.5f * cellSize, hy - 1.5f * cellSize, 5f);
-                SpawnBackgroundBox(bgPos, new Vector2(bgSize, bgSize), transform);
-
-                foreach (BlockCellInfo cell in heldPiece.GetWorldCellsAtOrigin(heldOrigin))
+                List<BlockCellInfo> cells = new List<BlockCellInfo>(piece.GetWorldCellsAtOrigin(Vector2Int.zero));
+                if (cells.Count > 0)
                 {
-                    SpawnCell(cell, null, transform);
+                    float minX = float.MaxValue, maxX = float.MinValue;
+                    float minY = float.MaxValue, maxY = float.MinValue;
+                    foreach (var cell in cells)
+                    {
+                        minX = Mathf.Min(minX, cell.Position.x);
+                        maxX = Mathf.Max(maxX, cell.Position.x);
+                        minY = Mathf.Min(minY, -cell.Position.y); 
+                        maxY = Mathf.Max(maxY, -cell.Position.y);
+                    }
+                    
+                    float cx = (minX + maxX) * 0.5f;
+                    float cy = (minY + maxY) * 0.5f;
+                    
+                    float blockScale = 0.5f;
+                    
+                    foreach (var cell in cells)
+                    {
+                        float localX = (cell.Position.x - cx) * cellSize * blockScale;
+                        float localY = (-cell.Position.y - cy) * cellSize * blockScale;
+                        SpawnCellVisual(cell, new Vector3(centerX + localX, centerY + localY - 0.15f * cellSize, 0f), blockScale, transform);
+                    }
                 }
-                
-                SpawnLabel("HOLD", new Vector3(hx, hy, 0f), transform);
             }
+        }
 
-            if (nextPiece != null)
-            {
-                Vector2Int nextOrigin = new Vector2Int(board != null ? board.Width - 3 : 9, -4);
-                
-                float nx = (board != null ? board.Width - 3 : 9) * cellSize + cachedBoardOffset.x + cellSize;
-                float ny = -(-5) * cellSize + cachedBoardOffset.y;
-
-                float bgSize = cellSize * 5f;
-                Vector3 bgPos = new Vector3(nx - 0.5f * cellSize, ny - 1.5f * cellSize, 5f);
-                SpawnBackgroundBox(bgPos, new Vector2(bgSize, bgSize), transform);
-
-                foreach (BlockCellInfo cell in nextPiece.GetWorldCellsAtOrigin(nextOrigin))
-                {
-                    SpawnCell(cell, null, transform);
-                }
-                
-                SpawnLabel("NEXT", new Vector3(nx, ny, 0f), transform);
-            }
+        private void SpawnCellVisual(BlockCellInfo cell, Vector3 localPos, float scale, Transform root)
+        {
+            if (cellPrefab == null) return;
+            BlockCellView view = Instantiate(cellPrefab, root);
+            view.gameObject.SetActive(true);
+            view.transform.localPosition = localPos;
+            view.transform.localScale = new Vector3(scale, scale, 1f);
+            view.SetCell(cell, null);
+            
+            SpriteRenderer sr = view.GetComponent<SpriteRenderer>();
+            if (sr != null) sr.sortingOrder = 5;
+            
+            spawnedViews.Add(view);
         }
 
         private void SpawnLabel(string text, Vector3 pos, Transform root)
         {
             GameObject labelObj = new GameObject("Label");
             if (root != null) labelObj.transform.SetParent(root, false);
-            TextMesh tm = labelObj.AddComponent<TextMesh>();
-            tm.text = text;
-            tm.anchor = TextAnchor.LowerCenter;
-            tm.fontSize = 40;
-            tm.characterSize = (1.5f * cellSize) / 40f;
-            tm.color = Color.white;
-            labelObj.transform.localPosition = pos;
             
-            // Add dummy BlockCellView so it gets cleaned up by ClearViews()
+            TMPro.TextMeshPro tm = labelObj.AddComponent<TMPro.TextMeshPro>();
+            tm.text = text;
+            tm.alignment = TMPro.TextAlignmentOptions.Center;
+            tm.fontSize = 1.5f; 
+            tm.color = Color.white;
+            tm.fontStyle = TMPro.FontStyles.Bold | TMPro.FontStyles.SmallCaps;
+            tm.enableVertexGradient = true;
+            tm.colorGradient = new TMPro.VertexGradient(new Color(1f, 0.9f, 0.4f), new Color(1f, 0.8f, 0.2f), new Color(1f, 0.6f, 0f), new Color(1f, 0.5f, 0f));
+            tm.characterSpacing = 3f;
+            
+            RectTransform rt = tm.GetComponent<RectTransform>();
+            rt.sizeDelta = new Vector2(20f, 5f);
+            
+            labelObj.transform.localPosition = pos;
+            tm.sortingOrder = 10;
+            
             spawnedViews.Add(labelObj.AddComponent<BlockCellView>());
         }
 
-        private void SpawnBackgroundBox(Vector3 position, Vector2 size, Transform root)
+        private void SpawnBackgroundBox(Vector3 position, Vector2 size, Color color, Transform root, int order = -5)
         {
             GameObject bgObj = new GameObject("PreviewBackground");
             if (root != null) bgObj.transform.SetParent(root, false);
@@ -131,8 +171,8 @@ namespace GraviTrix.Runtime
             {
                 sr.sprite = gridBackground.sprite;
             }
-            sr.color = new Color(0.12f, 0.12f, 0.15f, 0.9f);
-            sr.sortingOrder = -5;
+            sr.color = color;
+            sr.sortingOrder = order;
             
             bgObj.transform.localScale = new Vector3(size.x, size.y, 1f);
             
@@ -413,7 +453,7 @@ namespace GraviTrix.Runtime
 
         public void PlayExtinguishAnimation(List<BlockCellInfo> cellsToAnimate, float duration)
         {
-            StartCoroutine(ExtinguishAnimationCoroutine(cellsToAnimate, duration));
+            StartCoroutine(ExtinguishAnimationCoroutine(new List<BlockCellInfo>(cellsToAnimate), duration));
         }
 
         private IEnumerator ExtinguishAnimationCoroutine(List<BlockCellInfo> cells, float duration)
@@ -443,6 +483,8 @@ namespace GraviTrix.Runtime
                 smokeObj.transform.localPosition = targetPos;
                 ParticleSystem ps = smokeObj.AddComponent<ParticleSystem>();
                 
+                ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+                
                 var main = ps.main;
                 main.duration = duration;
                 main.startLifetime = 1f;
@@ -450,6 +492,7 @@ namespace GraviTrix.Runtime
                 main.startSize = cellSize * 0.4f;
                 main.startColor = new ParticleSystem.MinMaxGradient(new Color(0.6f, 0.6f, 0.6f, 0.7f), new Color(0.8f, 0.8f, 0.8f, 0.4f));
                 main.loop = false;
+                main.playOnAwake = false;
 
                 var emission = ps.emission;
                 emission.rateOverTime = 20;

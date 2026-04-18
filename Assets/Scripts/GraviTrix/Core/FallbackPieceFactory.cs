@@ -143,6 +143,13 @@ namespace GraviTrix.Core
             return new PieceInstance(origin, selected.Pivot, selected.Cells);
         }
 
+        public static PieceInstance CreateLava(Vector2Int origin)
+        {
+            if (Templates.Length <= 8) return null;
+            Template selected = Templates[8]; // Index 8 is the 2x2 Lava piece
+            return new PieceInstance(origin, selected.Pivot, selected.Cells);
+        }
+
         private static BlockCellState Cell(int x, int y, BlockKind kind, BlockVisualType visual)
         {
             return new BlockCellState(new Vector2Int(x, y), kind, visual);
