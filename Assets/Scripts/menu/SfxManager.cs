@@ -55,7 +55,7 @@ public class SfxManager : MonoBehaviour
         // Placeholder sound effects — user will add these mp3 files to Resources/SoundEffects/
         lavaMeltClip = Resources.Load<AudioClip>("SoundEffects/lava_melt_sound");
         lineClearClip = Resources.Load<AudioClip>("SoundEffects/line_clear_sound");
-        gameOverClip = Resources.Load<AudioClip>("SoundEffects/game_over_sound");
+        gameOverClip = Resources.Load<AudioClip>("SoundEffects/game_over");
     }
 
     // ==================== Public play methods ====================
