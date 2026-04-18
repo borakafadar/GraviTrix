@@ -50,6 +50,8 @@ public class MainMenuBuilder : MonoBehaviour
         CreateMenuCamera();
         CreateCanvas();
         CreateBackgroundGrid();
+        CreateFlyingBlocks(); // Uçan bloklar eklendi
+        CreateBackgroundParticles(); // Parçacık efektleri eklendi
         CreateTitle();
         CreateRecordText();
         CreateMenuButtons();
@@ -141,7 +143,76 @@ public class MainMenuBuilder : MonoBehaviour
         rect.offsetMin = Vector2.zero;
         rect.offsetMax = Vector2.zero;
 
+        // Arkaplanı en arkaya atıyoruz
+        Canvas bgCanvas = backgroundObject.AddComponent<Canvas>();
+        bgCanvas.overrideSorting = true;
+        bgCanvas.sortingOrder = 5;
+
         backgroundObject.transform.SetAsFirstSibling();
+    }
+
+    private void CreateFlyingBlocks()
+    {
+        GameObject container = new GameObject("Flying Blocks Container");
+        container.transform.SetParent(canvas.transform, false);
+
+        Canvas fbCanvas = container.AddComponent<Canvas>();
+        fbCanvas.overrideSorting = true;
+        fbCanvas.sortingOrder = 6;
+
+        RectTransform rect = container.GetComponent<RectTransform>();
+        rect.anchorMin = Vector2.zero;
+        rect.anchorMax = Vector2.one;
+        rect.offsetMin = Vector2.zero;
+        rect.offsetMax = Vector2.zero;
+
+        FlyingBlocksManager manager = container.AddComponent<FlyingBlocksManager>();
+        manager.blockSprite = CreateSimpleBlockSprite(128, 24);
+
+        container.transform.SetSiblingIndex(1);
+    }
+
+    private void CreateBackgroundParticles()
+    {
+        GameObject psObj = new GameObject("BackgroundParticles");
+        psObj.transform.SetParent(menuCamera.transform, false);
+        psObj.transform.localPosition = new Vector3(0, 0, 5f);
+
+        ParticleSystem ps = psObj.AddComponent<ParticleSystem>();
+        ParticleSystemRenderer psr = ps.GetComponent<ParticleSystemRenderer>();
+
+        psr.material = new Material(Shader.Find("Sprites/Default"));
+        psr.sortingOrder = 8;
+
+        var main = ps.main;
+        main.duration = 5f;
+        main.loop = true;
+        main.startLifetime = new ParticleSystem.MinMaxCurve(4f, 10f);
+        main.startSpeed = new ParticleSystem.MinMaxCurve(0.1f, 0.4f);
+        main.startSize = new ParticleSystem.MinMaxCurve(0.05f, 0.2f);
+        main.startColor = new Color(1f, 1f, 1f, 0.4f);
+        main.simulationSpace = ParticleSystemSimulationSpace.World;
+        main.maxParticles = 150;
+
+        var emission = ps.emission;
+        emission.rateOverTime = 20f;
+
+        var shape = ps.shape;
+        shape.shapeType = ParticleSystemShapeType.Box;
+        shape.scale = new Vector3(20f, 20f, 1f);
+
+        var velOverLifetime = ps.velocityOverLifetime;
+        velOverLifetime.enabled = true;
+        velOverLifetime.y = new ParticleSystem.MinMaxCurve(0.5f, 2.0f);
+
+        var colorOverLifetime = ps.colorOverLifetime;
+        colorOverLifetime.enabled = true;
+        Gradient grad = new Gradient();
+        grad.SetKeys(
+            new GradientColorKey[] { new GradientColorKey(Color.cyan, 0f), new GradientColorKey(Color.magenta, 1f) },
+            new GradientAlphaKey[] { new GradientAlphaKey(0f, 0f), new GradientAlphaKey(1f, 0.3f), new GradientAlphaKey(0f, 1f) }
+        );
+        colorOverLifetime.color = grad;
     }
 
     private void CreateTitle()
@@ -152,7 +223,10 @@ public class MainMenuBuilder : MonoBehaviour
         Text titleText = titleObject.AddComponent<Text>();
         titleText.text = "GRAVITRIX";
         titleText.font = titleFont != null ? titleFont : GetDefaultFont();
-        titleText.fontSize = 96;
+
+        // Boyut büyütüldü
+        titleText.fontSize = 145;
+
         titleText.fontStyle = FontStyle.Bold;
         titleText.alignment = TextAnchor.MiddleCenter;
         titleText.color = Color.white;
@@ -173,8 +247,10 @@ public class MainMenuBuilder : MonoBehaviour
         rect.anchorMin = new Vector2(0.5f, 1f);
         rect.anchorMax = new Vector2(0.5f, 1f);
         rect.pivot = new Vector2(0.5f, 0.5f);
-        rect.anchoredPosition = new Vector2(0f, -250f);
-        rect.sizeDelta = new Vector2(940f, 160f);
+
+        // Aşağı alındı ve genişletildi
+        rect.anchoredPosition = new Vector2(0f, -310f);
+        rect.sizeDelta = new Vector2(1300f, 250f);
 
         titleObject.transform.SetAsLastSibling();
     }
@@ -188,9 +264,13 @@ public class MainMenuBuilder : MonoBehaviour
 
         int recordScore = PlayerPrefs.GetInt(recordPlayerPrefsKey, 0);
 
-        recordText.text = "RECORD: " + recordScore;
+        // TOP RECORD olarak değiştirildi
+        recordText.text = "TOP RECORD: " + recordScore;
         recordText.font = buttonFont != null ? buttonFont : GetDefaultFont();
-        recordText.fontSize = 34;
+
+        // Boyut büyütüldü
+        recordText.fontSize = 42;
+
         recordText.fontStyle = FontStyle.Bold;
         recordText.alignment = TextAnchor.MiddleCenter;
         recordText.color = new Color32(255, 225, 80, 255);
@@ -203,8 +283,10 @@ public class MainMenuBuilder : MonoBehaviour
         rect.anchorMin = new Vector2(0.5f, 1f);
         rect.anchorMax = new Vector2(0.5f, 1f);
         rect.pivot = new Vector2(0.5f, 0.5f);
-        rect.anchoredPosition = new Vector2(0f, -355f);
-        rect.sizeDelta = new Vector2(600f, 70f);
+
+        // Başlığa göre hizalandı
+        rect.anchoredPosition = new Vector2(0f, -440f);
+        rect.sizeDelta = new Vector2(800f, 80f);
 
         recordObject.transform.SetAsLastSibling();
     }
@@ -299,449 +381,450 @@ public class MainMenuBuilder : MonoBehaviour
     }
 
     private void CreateOptionsPopup()
-{
-    optionsPopupObject = new GameObject("Options Popup");
-    optionsPopupObject.transform.SetParent(canvas.transform, false);
-
-    RectTransform popupRootRect = optionsPopupObject.AddComponent<RectTransform>();
-    popupRootRect.anchorMin = Vector2.zero;
-    popupRootRect.anchorMax = Vector2.one;
-    popupRootRect.offsetMin = Vector2.zero;
-    popupRootRect.offsetMax = Vector2.zero;
-
-    Image darkOverlay = optionsPopupObject.AddComponent<Image>();
-    darkOverlay.color = new Color(0f, 0f, 0f, 0.45f);
-
-    GameObject panelObject = new GameObject("Options Panel");
-    panelObject.transform.SetParent(optionsPopupObject.transform, false);
-
-    RectTransform panelRect = panelObject.AddComponent<RectTransform>();
-    panelRect.anchorMin = new Vector2(0.5f, 0.5f);
-    panelRect.anchorMax = new Vector2(0.5f, 0.5f);
-    panelRect.pivot = new Vector2(0.5f, 0.5f);
-    panelRect.anchoredPosition = Vector2.zero;
-    panelRect.sizeDelta = new Vector2(720f, 650f);
-
-    Image panelImage = panelObject.AddComponent<Image>();
-    panelImage.sprite = CreateRoundedPanelSprite(720, 650, 42);
-    panelImage.type = Image.Type.Simple;
-
-    Shadow panelShadow = panelObject.AddComponent<Shadow>();
-    panelShadow.effectColor = new Color(0f, 0f, 0f, 0.45f);
-    panelShadow.effectDistance = new Vector2(0f, -10f);
-
-    CreatePopupTitle(panelObject.transform);
-
-musicVolume = PlayerPrefs.GetFloat(MusicVolumeKey, 0.8f);
-sfxVolume = PlayerPrefs.GetFloat(SfxVolumeKey, 0.8f);
-
-CreateMusicVolumeSlider(panelObject.transform, new Vector2(0f, 110f));
-CreateSfxVolumeSlider(panelObject.transform, new Vector2(0f, -55f));
-CreatePopupButton(panelObject.transform, "CLOSE", new Vector2(0f, -240f), CloseOptionsPopup, out _);
-
-UpdateOptionsTexts();
-
-optionsPopupObject.SetActive(false);
-optionsPopupObject.transform.SetAsLastSibling();
-}
-
-private void CreatePopupTitle(Transform parent)
-{
-    GameObject titleObject = new GameObject("Options Title");
-    titleObject.transform.SetParent(parent, false);
-
-    Text titleText = titleObject.AddComponent<Text>();
-    titleText.text = "OPTIONS";
-    titleText.font = titleFont != null ? titleFont : GetDefaultFont();
-    titleText.fontSize = 62;
-    titleText.fontStyle = FontStyle.Bold;
-    titleText.alignment = TextAnchor.MiddleCenter;
-    titleText.color = new Color32(255, 225, 90, 255);
-
-    Shadow shadow = titleObject.AddComponent<Shadow>();
-    shadow.effectColor = new Color(0f, 0f, 0f, 0.5f);
-    shadow.effectDistance = new Vector2(4f, -4f);
-
-    RectTransform rect = titleObject.GetComponent<RectTransform>();
-    rect.anchorMin = new Vector2(0.5f, 0.5f);
-    rect.anchorMax = new Vector2(0.5f, 0.5f);
-    rect.pivot = new Vector2(0.5f, 0.5f);
-    rect.anchoredPosition = new Vector2(0f, 230f);
-    rect.sizeDelta = new Vector2(600f, 100f);
-}
-
-private void CreatePopupButton(
-    Transform parent,
-    string label,
-    Vector2 anchoredPosition,
-    UnityEngine.Events.UnityAction clickAction,
-    out Text createdText
-)
-{
-    GameObject buttonObject = new GameObject("Popup Button - " + label);
-    buttonObject.transform.SetParent(parent, false);
-
-    RectTransform rect = buttonObject.AddComponent<RectTransform>();
-    rect.anchorMin = new Vector2(0.5f, 0.5f);
-    rect.anchorMax = new Vector2(0.5f, 0.5f);
-    rect.pivot = new Vector2(0.5f, 0.5f);
-    rect.anchoredPosition = anchoredPosition;
-    rect.sizeDelta = new Vector2(500f, 95f);
-
-    Image buttonImage = buttonObject.AddComponent<Image>();
-    buttonImage.sprite = CreateRoundedButtonSprite(500, 95, 26);
-    buttonImage.type = Image.Type.Simple;
-    buttonImage.raycastTarget = true;
-
-    Button button = buttonObject.AddComponent<Button>();
-    button.targetGraphic = buttonImage;
-    button.transition = Selectable.Transition.None;
-    button.onClick.AddListener(clickAction);
-
-    GameObject darkOverlayObject = new GameObject("Hover Dark Overlay");
-    darkOverlayObject.transform.SetParent(buttonObject.transform, false);
-
-    Image darkOverlay = darkOverlayObject.AddComponent<Image>();
-    darkOverlay.sprite = buttonImage.sprite;
-    darkOverlay.type = Image.Type.Simple;
-    darkOverlay.color = new Color(0f, 0f, 0f, 0f);
-    darkOverlay.raycastTarget = false;
-
-    RectTransform overlayRect = darkOverlayObject.GetComponent<RectTransform>();
-    overlayRect.anchorMin = Vector2.zero;
-    overlayRect.anchorMax = Vector2.one;
-    overlayRect.offsetMin = Vector2.zero;
-    overlayRect.offsetMax = Vector2.zero;
-
-    GameObject textObject = new GameObject("Text - " + label);
-    textObject.transform.SetParent(buttonObject.transform, false);
-
-    Text buttonText = textObject.AddComponent<Text>();
-    buttonText.text = label;
-    buttonText.font = buttonFont != null ? buttonFont : GetDefaultFont();
-    buttonText.fontSize = 36;
-    buttonText.fontStyle = FontStyle.Bold;
-    buttonText.alignment = TextAnchor.MiddleCenter;
-    buttonText.color = new Color32(75, 42, 22, 255);
-    buttonText.raycastTarget = false;
-
-    RectTransform textRect = textObject.GetComponent<RectTransform>();
-    textRect.anchorMin = Vector2.zero;
-    textRect.anchorMax = Vector2.one;
-    textRect.offsetMin = Vector2.zero;
-    textRect.offsetMax = Vector2.zero;
-
-    MainMenuButtonEffect effect = buttonObject.AddComponent<MainMenuButtonEffect>();
-    effect.SetOverlay(darkOverlay);
-
-    darkOverlayObject.transform.SetAsLastSibling();
-    textObject.transform.SetAsLastSibling();
-
-    createdText = buttonText;
-}
-private void CreateMusicVolumeSlider(Transform parent, Vector2 anchoredPosition)
-{
-    GameObject rootObject = new GameObject("Music Volume Slider Root");
-    rootObject.transform.SetParent(parent, false);
-
-    RectTransform rootRect = rootObject.AddComponent<RectTransform>();
-    rootRect.anchorMin = new Vector2(0.5f, 0.5f);
-    rootRect.anchorMax = new Vector2(0.5f, 0.5f);
-    rootRect.pivot = new Vector2(0.5f, 0.5f);
-    rootRect.anchoredPosition = anchoredPosition;
-    rootRect.sizeDelta = new Vector2(560f, 130f);
-
-    GameObject labelObject = new GameObject("Music Volume Label");
-    labelObject.transform.SetParent(rootObject.transform, false);
-
-    musicVolumeText = labelObject.AddComponent<Text>();
-    musicVolumeText.font = buttonFont != null ? buttonFont : GetDefaultFont();
-    musicVolumeText.fontSize = 30;
-    musicVolumeText.fontStyle = FontStyle.Bold;
-    musicVolumeText.alignment = TextAnchor.MiddleCenter;
-    musicVolumeText.color = new Color32(255, 225, 90, 255);
-    musicVolumeText.raycastTarget = false;
-
-    RectTransform labelRect = labelObject.GetComponent<RectTransform>();
-    labelRect.anchorMin = new Vector2(0.5f, 1f);
-    labelRect.anchorMax = new Vector2(0.5f, 1f);
-    labelRect.pivot = new Vector2(0.5f, 0.5f);
-    labelRect.anchoredPosition = new Vector2(0f, -20f);
-    labelRect.sizeDelta = new Vector2(560f, 50f);
-
-    GameObject sliderObject = new GameObject("Music Volume Slider");
-    sliderObject.transform.SetParent(rootObject.transform, false);
-
-    RectTransform sliderRect = sliderObject.AddComponent<RectTransform>();
-    sliderRect.anchorMin = new Vector2(0.5f, 0f);
-    sliderRect.anchorMax = new Vector2(0.5f, 0f);
-    sliderRect.pivot = new Vector2(0.5f, 0.5f);
-    sliderRect.anchoredPosition = new Vector2(0f, 35f);
-    sliderRect.sizeDelta = new Vector2(520f, 55f);
-
-    musicVolumeSlider = sliderObject.AddComponent<Slider>();
-    musicVolumeSlider.minValue = 0f;
-    musicVolumeSlider.maxValue = 1f;
-    musicVolumeSlider.wholeNumbers = false;
-
-    GameObject backgroundObject = new GameObject("Background");
-    backgroundObject.transform.SetParent(sliderObject.transform, false);
-
-    Image backgroundImage = backgroundObject.AddComponent<Image>();
-    backgroundImage.sprite = CreateSliderTrackSprite(520, 28, 14, new Color32(45, 28, 80, 255), new Color32(160, 130, 210, 255));
-    backgroundImage.type = Image.Type.Simple;
-
-    RectTransform backgroundRect = backgroundObject.GetComponent<RectTransform>();
-    backgroundRect.anchorMin = new Vector2(0f, 0.5f);
-    backgroundRect.anchorMax = new Vector2(1f, 0.5f);
-    backgroundRect.pivot = new Vector2(0.5f, 0.5f);
-    backgroundRect.anchoredPosition = Vector2.zero;
-    backgroundRect.sizeDelta = new Vector2(0f, 28f);
-
-    GameObject fillAreaObject = new GameObject("Fill Area");
-    fillAreaObject.transform.SetParent(sliderObject.transform, false);
-
-    RectTransform fillAreaRect = fillAreaObject.AddComponent<RectTransform>();
-    fillAreaRect.anchorMin = new Vector2(0f, 0.5f);
-    fillAreaRect.anchorMax = new Vector2(1f, 0.5f);
-    fillAreaRect.pivot = new Vector2(0.5f, 0.5f);
-    fillAreaRect.anchoredPosition = Vector2.zero;
-    fillAreaRect.sizeDelta = new Vector2(-32f, 28f);
-
-    GameObject fillObject = new GameObject("Fill");
-    fillObject.transform.SetParent(fillAreaObject.transform, false);
-
-    Image fillImage = fillObject.AddComponent<Image>();
-    fillImage.sprite = CreateSliderTrackSprite(520, 28, 14, new Color32(255, 220, 45, 255), new Color32(235, 135, 22, 255));
-    fillImage.type = Image.Type.Simple;
-
-    RectTransform fillRect = fillObject.GetComponent<RectTransform>();
-    fillRect.anchorMin = Vector2.zero;
-    fillRect.anchorMax = Vector2.one;
-    fillRect.offsetMin = Vector2.zero;
-    fillRect.offsetMax = Vector2.zero;
-
-    GameObject handleAreaObject = new GameObject("Handle Slide Area");
-    handleAreaObject.transform.SetParent(sliderObject.transform, false);
-
-    RectTransform handleAreaRect = handleAreaObject.AddComponent<RectTransform>();
-    handleAreaRect.anchorMin = Vector2.zero;
-    handleAreaRect.anchorMax = Vector2.one;
-    handleAreaRect.offsetMin = new Vector2(18f, 0f);
-    handleAreaRect.offsetMax = new Vector2(-18f, 0f);
-
-    GameObject handleObject = new GameObject("Handle");
-    handleObject.transform.SetParent(handleAreaObject.transform, false);
-
-    Image handleImage = handleObject.AddComponent<Image>();
-    handleImage.sprite = CreateCircleSprite(48, new Color32(255, 235, 95, 255), new Color32(145, 75, 20, 255));
-    handleImage.type = Image.Type.Simple;
-
-    RectTransform handleRect = handleObject.GetComponent<RectTransform>();
-    handleRect.sizeDelta = new Vector2(48f, 48f);
-
-    musicVolumeSlider.fillRect = fillRect;
-    musicVolumeSlider.handleRect = handleRect;
-    musicVolumeSlider.targetGraphic = handleImage;
-
-    musicVolumeSlider.value = musicVolume;
-    musicVolumeSlider.onValueChanged.AddListener(OnMusicVolumeChanged);
-
-    UpdateMusicVolumeText();
-}
-
-private void CreateSfxVolumeSlider(Transform parent, Vector2 anchoredPosition)
-{
-    GameObject rootObject = new GameObject("SFX Volume Slider Root");
-    rootObject.transform.SetParent(parent, false);
-
-    RectTransform rootRect = rootObject.AddComponent<RectTransform>();
-    rootRect.anchorMin = new Vector2(0.5f, 0.5f);
-    rootRect.anchorMax = new Vector2(0.5f, 0.5f);
-    rootRect.pivot = new Vector2(0.5f, 0.5f);
-    rootRect.anchoredPosition = anchoredPosition;
-    rootRect.sizeDelta = new Vector2(560f, 130f);
-
-    GameObject labelObject = new GameObject("SFX Volume Label");
-    labelObject.transform.SetParent(rootObject.transform, false);
-
-    sfxVolumeText = labelObject.AddComponent<Text>();
-    sfxVolumeText.font = buttonFont != null ? buttonFont : GetDefaultFont();
-    sfxVolumeText.fontSize = 30;
-    sfxVolumeText.fontStyle = FontStyle.Bold;
-    sfxVolumeText.alignment = TextAnchor.MiddleCenter;
-    sfxVolumeText.color = new Color32(255, 225, 90, 255);
-    sfxVolumeText.raycastTarget = false;
-
-    RectTransform labelRect = labelObject.GetComponent<RectTransform>();
-    labelRect.anchorMin = new Vector2(0.5f, 1f);
-    labelRect.anchorMax = new Vector2(0.5f, 1f);
-    labelRect.pivot = new Vector2(0.5f, 0.5f);
-    labelRect.anchoredPosition = new Vector2(0f, -20f);
-    labelRect.sizeDelta = new Vector2(560f, 50f);
-
-    GameObject sliderObject = new GameObject("SFX Volume Slider");
-    sliderObject.transform.SetParent(rootObject.transform, false);
-
-    RectTransform sliderRect = sliderObject.AddComponent<RectTransform>();
-    sliderRect.anchorMin = new Vector2(0.5f, 0f);
-    sliderRect.anchorMax = new Vector2(0.5f, 0f);
-    sliderRect.pivot = new Vector2(0.5f, 0.5f);
-    sliderRect.anchoredPosition = new Vector2(0f, 35f);
-    sliderRect.sizeDelta = new Vector2(520f, 55f);
-
-    sfxVolumeSlider = sliderObject.AddComponent<Slider>();
-    sfxVolumeSlider.minValue = 0f;
-    sfxVolumeSlider.maxValue = 1f;
-    sfxVolumeSlider.wholeNumbers = false;
-
-    GameObject backgroundObject = new GameObject("Background");
-    backgroundObject.transform.SetParent(sliderObject.transform, false);
-
-    Image backgroundImage = backgroundObject.AddComponent<Image>();
-    backgroundImage.sprite = CreateSliderTrackSprite(
-        520,
-        28,
-        14,
-        new Color32(45, 28, 80, 255),
-        new Color32(160, 130, 210, 255)
-    );
-    backgroundImage.type = Image.Type.Simple;
-
-    RectTransform backgroundRect = backgroundObject.GetComponent<RectTransform>();
-    backgroundRect.anchorMin = new Vector2(0f, 0.5f);
-    backgroundRect.anchorMax = new Vector2(1f, 0.5f);
-    backgroundRect.pivot = new Vector2(0.5f, 0.5f);
-    backgroundRect.anchoredPosition = Vector2.zero;
-    backgroundRect.sizeDelta = new Vector2(0f, 28f);
-
-    GameObject fillAreaObject = new GameObject("Fill Area");
-    fillAreaObject.transform.SetParent(sliderObject.transform, false);
-
-    RectTransform fillAreaRect = fillAreaObject.AddComponent<RectTransform>();
-    fillAreaRect.anchorMin = new Vector2(0f, 0.5f);
-    fillAreaRect.anchorMax = new Vector2(1f, 0.5f);
-    fillAreaRect.pivot = new Vector2(0.5f, 0.5f);
-    fillAreaRect.anchoredPosition = Vector2.zero;
-    fillAreaRect.sizeDelta = new Vector2(-32f, 28f);
-
-    GameObject fillObject = new GameObject("Fill");
-    fillObject.transform.SetParent(fillAreaObject.transform, false);
-
-    Image fillImage = fillObject.AddComponent<Image>();
-    fillImage.sprite = CreateSliderTrackSprite(
-        520,
-        28,
-        14,
-        new Color32(255, 220, 45, 255),
-        new Color32(235, 135, 22, 255)
-    );
-    fillImage.type = Image.Type.Simple;
-
-    RectTransform fillRect = fillObject.GetComponent<RectTransform>();
-    fillRect.anchorMin = Vector2.zero;
-    fillRect.anchorMax = Vector2.one;
-    fillRect.offsetMin = Vector2.zero;
-    fillRect.offsetMax = Vector2.zero;
-
-    GameObject handleAreaObject = new GameObject("Handle Slide Area");
-    handleAreaObject.transform.SetParent(sliderObject.transform, false);
-
-    RectTransform handleAreaRect = handleAreaObject.AddComponent<RectTransform>();
-    handleAreaRect.anchorMin = Vector2.zero;
-    handleAreaRect.anchorMax = Vector2.one;
-    handleAreaRect.offsetMin = new Vector2(18f, 0f);
-    handleAreaRect.offsetMax = new Vector2(-18f, 0f);
-
-    GameObject handleObject = new GameObject("Handle");
-    handleObject.transform.SetParent(handleAreaObject.transform, false);
-
-    Image handleImage = handleObject.AddComponent<Image>();
-    handleImage.sprite = CreateCircleSprite(
-        48,
-        new Color32(255, 235, 95, 255),
-        new Color32(145, 75, 20, 255)
-    );
-    handleImage.type = Image.Type.Simple;
-
-    RectTransform handleRect = handleObject.GetComponent<RectTransform>();
-    handleRect.sizeDelta = new Vector2(48f, 48f);
-
-    sfxVolumeSlider.fillRect = fillRect;
-    sfxVolumeSlider.handleRect = handleRect;
-    sfxVolumeSlider.targetGraphic = handleImage;
-
-    sfxVolumeSlider.value = sfxVolume;
-    sfxVolumeSlider.onValueChanged.AddListener(OnSfxVolumeChanged);
-
-    UpdateSfxVolumeText();
-}
-
-private void OnMusicVolumeChanged(float value)
-{
-    musicVolume = value;
-
-    PlayerPrefs.SetFloat(MusicVolumeKey, musicVolume);
-    PlayerPrefs.Save();
-
-    UpdateMusicVolumeText();
-
-    if (MusicManager.Instance != null)
     {
-        MusicManager.Instance.SetVolume(musicVolume);
-    }
-}
+        optionsPopupObject = new GameObject("Options Popup");
+        optionsPopupObject.transform.SetParent(canvas.transform, false);
 
-private void UpdateMusicVolumeText()
-{
-    if (musicVolumeText == null)
-    {
-        return;
-    }
+        RectTransform popupRootRect = optionsPopupObject.AddComponent<RectTransform>();
+        popupRootRect.anchorMin = Vector2.zero;
+        popupRootRect.anchorMax = Vector2.one;
+        popupRootRect.offsetMin = Vector2.zero;
+        popupRootRect.offsetMax = Vector2.zero;
 
-    int percentage = Mathf.RoundToInt(musicVolume * 100f);
-    musicVolumeText.text = "MUSIC VOLUME: " + percentage + "%";
-}
+        Image darkOverlay = optionsPopupObject.AddComponent<Image>();
+        darkOverlay.color = new Color(0f, 0f, 0f, 0.45f);
 
-private void OnSfxVolumeChanged(float value)
-{
-    sfxVolume = value;
+        GameObject panelObject = new GameObject("Options Panel");
+        panelObject.transform.SetParent(optionsPopupObject.transform, false);
 
-    PlayerPrefs.SetFloat(SfxVolumeKey, sfxVolume);
-    PlayerPrefs.Save();
+        RectTransform panelRect = panelObject.AddComponent<RectTransform>();
+        panelRect.anchorMin = new Vector2(0.5f, 0.5f);
+        panelRect.anchorMax = new Vector2(0.5f, 0.5f);
+        panelRect.pivot = new Vector2(0.5f, 0.5f);
+        panelRect.anchoredPosition = Vector2.zero;
+        panelRect.sizeDelta = new Vector2(720f, 650f);
 
-    UpdateSfxVolumeText();
+        Image panelImage = panelObject.AddComponent<Image>();
+        panelImage.sprite = CreateRoundedPanelSprite(720, 650, 42);
+        panelImage.type = Image.Type.Simple;
 
-    if (SfxManager.Instance != null)
-    {
-        SfxManager.Instance.SetVolume(sfxVolume);
-    }
-}
+        Shadow panelShadow = panelObject.AddComponent<Shadow>();
+        panelShadow.effectColor = new Color(0f, 0f, 0f, 0.45f);
+        panelShadow.effectDistance = new Vector2(0f, -10f);
 
-private void UpdateSfxVolumeText()
-{
-    if (sfxVolumeText == null)
-    {
-        return;
-    }
+        CreatePopupTitle(panelObject.transform);
 
-    int percentage = Mathf.RoundToInt(sfxVolume * 100f);
-    sfxVolumeText.text = "SFX VOLUME: " + percentage + "%";
-}
+        musicVolume = PlayerPrefs.GetFloat(MusicVolumeKey, 0.8f);
+        sfxVolume = PlayerPrefs.GetFloat(SfxVolumeKey, 0.8f);
 
-private void UpdateOptionsTexts()
-{
-    UpdateMusicVolumeText();
-    UpdateSfxVolumeText();
-}
+        CreateMusicVolumeSlider(panelObject.transform, new Vector2(0f, 110f));
+        CreateSfxVolumeSlider(panelObject.transform, new Vector2(0f, -55f));
+        CreatePopupButton(panelObject.transform, "CLOSE", new Vector2(0f, -240f), CloseOptionsPopup, out _);
 
-private void CloseOptionsPopup()
-{
-    if (optionsPopupObject != null)
-    {
+        UpdateOptionsTexts();
+
         optionsPopupObject.SetActive(false);
+        optionsPopupObject.transform.SetAsLastSibling();
     }
-}
+
+    private void CreatePopupTitle(Transform parent)
+    {
+        GameObject titleObject = new GameObject("Options Title");
+        titleObject.transform.SetParent(parent, false);
+
+        Text titleText = titleObject.AddComponent<Text>();
+        titleText.text = "OPTIONS";
+        titleText.font = titleFont != null ? titleFont : GetDefaultFont();
+        titleText.fontSize = 62;
+        titleText.fontStyle = FontStyle.Bold;
+        titleText.alignment = TextAnchor.MiddleCenter;
+        titleText.color = new Color32(255, 225, 90, 255);
+
+        Shadow shadow = titleObject.AddComponent<Shadow>();
+        shadow.effectColor = new Color(0f, 0f, 0f, 0.5f);
+        shadow.effectDistance = new Vector2(4f, -4f);
+
+        RectTransform rect = titleObject.GetComponent<RectTransform>();
+        rect.anchorMin = new Vector2(0.5f, 0.5f);
+        rect.anchorMax = new Vector2(0.5f, 0.5f);
+        rect.pivot = new Vector2(0.5f, 0.5f);
+        rect.anchoredPosition = new Vector2(0f, 230f);
+        rect.sizeDelta = new Vector2(600f, 100f);
+    }
+
+    private void CreatePopupButton(
+        Transform parent,
+        string label,
+        Vector2 anchoredPosition,
+        UnityEngine.Events.UnityAction clickAction,
+        out Text createdText
+    )
+    {
+        GameObject buttonObject = new GameObject("Popup Button - " + label);
+        buttonObject.transform.SetParent(parent, false);
+
+        RectTransform rect = buttonObject.AddComponent<RectTransform>();
+        rect.anchorMin = new Vector2(0.5f, 0.5f);
+        rect.anchorMax = new Vector2(0.5f, 0.5f);
+        rect.pivot = new Vector2(0.5f, 0.5f);
+        rect.anchoredPosition = anchoredPosition;
+        rect.sizeDelta = new Vector2(500f, 95f);
+
+        Image buttonImage = buttonObject.AddComponent<Image>();
+        buttonImage.sprite = CreateRoundedButtonSprite(500, 95, 26);
+        buttonImage.type = Image.Type.Simple;
+        buttonImage.raycastTarget = true;
+
+        Button button = buttonObject.AddComponent<Button>();
+        button.targetGraphic = buttonImage;
+        button.transition = Selectable.Transition.None;
+        button.onClick.AddListener(clickAction);
+
+        GameObject darkOverlayObject = new GameObject("Hover Dark Overlay");
+        darkOverlayObject.transform.SetParent(buttonObject.transform, false);
+
+        Image darkOverlay = darkOverlayObject.AddComponent<Image>();
+        darkOverlay.sprite = buttonImage.sprite;
+        darkOverlay.type = Image.Type.Simple;
+        darkOverlay.color = new Color(0f, 0f, 0f, 0f);
+        darkOverlay.raycastTarget = false;
+
+        RectTransform overlayRect = darkOverlayObject.GetComponent<RectTransform>();
+        overlayRect.anchorMin = Vector2.zero;
+        overlayRect.anchorMax = Vector2.one;
+        overlayRect.offsetMin = Vector2.zero;
+        overlayRect.offsetMax = Vector2.zero;
+
+        GameObject textObject = new GameObject("Text - " + label);
+        textObject.transform.SetParent(buttonObject.transform, false);
+
+        Text buttonText = textObject.AddComponent<Text>();
+        buttonText.text = label;
+        buttonText.font = buttonFont != null ? buttonFont : GetDefaultFont();
+        buttonText.fontSize = 36;
+        buttonText.fontStyle = FontStyle.Bold;
+        buttonText.alignment = TextAnchor.MiddleCenter;
+        buttonText.color = new Color32(75, 42, 22, 255);
+        buttonText.raycastTarget = false;
+
+        RectTransform textRect = textObject.GetComponent<RectTransform>();
+        textRect.anchorMin = Vector2.zero;
+        textRect.anchorMax = Vector2.one;
+        textRect.offsetMin = Vector2.zero;
+        textRect.offsetMax = Vector2.zero;
+
+        MainMenuButtonEffect effect = buttonObject.AddComponent<MainMenuButtonEffect>();
+        effect.SetOverlay(darkOverlay);
+
+        darkOverlayObject.transform.SetAsLastSibling();
+        textObject.transform.SetAsLastSibling();
+
+        createdText = buttonText;
+    }
+
+    private void CreateMusicVolumeSlider(Transform parent, Vector2 anchoredPosition)
+    {
+        GameObject rootObject = new GameObject("Music Volume Slider Root");
+        rootObject.transform.SetParent(parent, false);
+
+        RectTransform rootRect = rootObject.AddComponent<RectTransform>();
+        rootRect.anchorMin = new Vector2(0.5f, 0.5f);
+        rootRect.anchorMax = new Vector2(0.5f, 0.5f);
+        rootRect.pivot = new Vector2(0.5f, 0.5f);
+        rootRect.anchoredPosition = anchoredPosition;
+        rootRect.sizeDelta = new Vector2(560f, 130f);
+
+        GameObject labelObject = new GameObject("Music Volume Label");
+        labelObject.transform.SetParent(rootObject.transform, false);
+
+        musicVolumeText = labelObject.AddComponent<Text>();
+        musicVolumeText.font = buttonFont != null ? buttonFont : GetDefaultFont();
+        musicVolumeText.fontSize = 30;
+        musicVolumeText.fontStyle = FontStyle.Bold;
+        musicVolumeText.alignment = TextAnchor.MiddleCenter;
+        musicVolumeText.color = new Color32(255, 225, 90, 255);
+        musicVolumeText.raycastTarget = false;
+
+        RectTransform labelRect = labelObject.GetComponent<RectTransform>();
+        labelRect.anchorMin = new Vector2(0.5f, 1f);
+        labelRect.anchorMax = new Vector2(0.5f, 1f);
+        labelRect.pivot = new Vector2(0.5f, 0.5f);
+        labelRect.anchoredPosition = new Vector2(0f, -20f);
+        labelRect.sizeDelta = new Vector2(560f, 50f);
+
+        GameObject sliderObject = new GameObject("Music Volume Slider");
+        sliderObject.transform.SetParent(rootObject.transform, false);
+
+        RectTransform sliderRect = sliderObject.AddComponent<RectTransform>();
+        sliderRect.anchorMin = new Vector2(0.5f, 0f);
+        sliderRect.anchorMax = new Vector2(0.5f, 0f);
+        sliderRect.pivot = new Vector2(0.5f, 0.5f);
+        sliderRect.anchoredPosition = new Vector2(0f, 35f);
+        sliderRect.sizeDelta = new Vector2(520f, 55f);
+
+        musicVolumeSlider = sliderObject.AddComponent<Slider>();
+        musicVolumeSlider.minValue = 0f;
+        musicVolumeSlider.maxValue = 1f;
+        musicVolumeSlider.wholeNumbers = false;
+
+        GameObject backgroundObject = new GameObject("Background");
+        backgroundObject.transform.SetParent(sliderObject.transform, false);
+
+        Image backgroundImage = backgroundObject.AddComponent<Image>();
+        backgroundImage.sprite = CreateSliderTrackSprite(520, 28, 14, new Color32(45, 28, 80, 255), new Color32(160, 130, 210, 255));
+        backgroundImage.type = Image.Type.Simple;
+
+        RectTransform backgroundRect = backgroundObject.GetComponent<RectTransform>();
+        backgroundRect.anchorMin = new Vector2(0f, 0.5f);
+        backgroundRect.anchorMax = new Vector2(1f, 0.5f);
+        backgroundRect.pivot = new Vector2(0.5f, 0.5f);
+        backgroundRect.anchoredPosition = Vector2.zero;
+        backgroundRect.sizeDelta = new Vector2(0f, 28f);
+
+        GameObject fillAreaObject = new GameObject("Fill Area");
+        fillAreaObject.transform.SetParent(sliderObject.transform, false);
+
+        RectTransform fillAreaRect = fillAreaObject.AddComponent<RectTransform>();
+        fillAreaRect.anchorMin = new Vector2(0f, 0.5f);
+        fillAreaRect.anchorMax = new Vector2(1f, 0.5f);
+        fillAreaRect.pivot = new Vector2(0.5f, 0.5f);
+        fillAreaRect.anchoredPosition = Vector2.zero;
+        fillAreaRect.sizeDelta = new Vector2(-32f, 28f);
+
+        GameObject fillObject = new GameObject("Fill");
+        fillObject.transform.SetParent(fillAreaObject.transform, false);
+
+        Image fillImage = fillObject.AddComponent<Image>();
+        fillImage.sprite = CreateSliderTrackSprite(520, 28, 14, new Color32(255, 220, 45, 255), new Color32(235, 135, 22, 255));
+        fillImage.type = Image.Type.Simple;
+
+        RectTransform fillRect = fillObject.GetComponent<RectTransform>();
+        fillRect.anchorMin = Vector2.zero;
+        fillRect.anchorMax = Vector2.one;
+        fillRect.offsetMin = Vector2.zero;
+        fillRect.offsetMax = Vector2.zero;
+
+        GameObject handleAreaObject = new GameObject("Handle Slide Area");
+        handleAreaObject.transform.SetParent(sliderObject.transform, false);
+
+        RectTransform handleAreaRect = handleAreaObject.AddComponent<RectTransform>();
+        handleAreaRect.anchorMin = Vector2.zero;
+        handleAreaRect.anchorMax = Vector2.one;
+        handleAreaRect.offsetMin = new Vector2(18f, 0f);
+        handleAreaRect.offsetMax = new Vector2(-18f, 0f);
+
+        GameObject handleObject = new GameObject("Handle");
+        handleObject.transform.SetParent(handleAreaObject.transform, false);
+
+        Image handleImage = handleObject.AddComponent<Image>();
+        handleImage.sprite = CreateCircleSprite(48, new Color32(255, 235, 95, 255), new Color32(145, 75, 20, 255));
+        handleImage.type = Image.Type.Simple;
+
+        RectTransform handleRect = handleObject.GetComponent<RectTransform>();
+        handleRect.sizeDelta = new Vector2(48f, 48f);
+
+        musicVolumeSlider.fillRect = fillRect;
+        musicVolumeSlider.handleRect = handleRect;
+        musicVolumeSlider.targetGraphic = handleImage;
+
+        musicVolumeSlider.value = musicVolume;
+        musicVolumeSlider.onValueChanged.AddListener(OnMusicVolumeChanged);
+
+        UpdateMusicVolumeText();
+    }
+
+    private void CreateSfxVolumeSlider(Transform parent, Vector2 anchoredPosition)
+    {
+        GameObject rootObject = new GameObject("SFX Volume Slider Root");
+        rootObject.transform.SetParent(parent, false);
+
+        RectTransform rootRect = rootObject.AddComponent<RectTransform>();
+        rootRect.anchorMin = new Vector2(0.5f, 0.5f);
+        rootRect.anchorMax = new Vector2(0.5f, 0.5f);
+        rootRect.pivot = new Vector2(0.5f, 0.5f);
+        rootRect.anchoredPosition = anchoredPosition;
+        rootRect.sizeDelta = new Vector2(560f, 130f);
+
+        GameObject labelObject = new GameObject("SFX Volume Label");
+        labelObject.transform.SetParent(rootObject.transform, false);
+
+        sfxVolumeText = labelObject.AddComponent<Text>();
+        sfxVolumeText.font = buttonFont != null ? buttonFont : GetDefaultFont();
+        sfxVolumeText.fontSize = 30;
+        sfxVolumeText.fontStyle = FontStyle.Bold;
+        sfxVolumeText.alignment = TextAnchor.MiddleCenter;
+        sfxVolumeText.color = new Color32(255, 225, 90, 255);
+        sfxVolumeText.raycastTarget = false;
+
+        RectTransform labelRect = labelObject.GetComponent<RectTransform>();
+        labelRect.anchorMin = new Vector2(0.5f, 1f);
+        labelRect.anchorMax = new Vector2(0.5f, 1f);
+        labelRect.pivot = new Vector2(0.5f, 0.5f);
+        labelRect.anchoredPosition = new Vector2(0f, -20f);
+        labelRect.sizeDelta = new Vector2(560f, 50f);
+
+        GameObject sliderObject = new GameObject("SFX Volume Slider");
+        sliderObject.transform.SetParent(rootObject.transform, false);
+
+        RectTransform sliderRect = sliderObject.AddComponent<RectTransform>();
+        sliderRect.anchorMin = new Vector2(0.5f, 0f);
+        sliderRect.anchorMax = new Vector2(0.5f, 0f);
+        sliderRect.pivot = new Vector2(0.5f, 0.5f);
+        sliderRect.anchoredPosition = new Vector2(0f, 35f);
+        sliderRect.sizeDelta = new Vector2(520f, 55f);
+
+        sfxVolumeSlider = sliderObject.AddComponent<Slider>();
+        sfxVolumeSlider.minValue = 0f;
+        sfxVolumeSlider.maxValue = 1f;
+        sfxVolumeSlider.wholeNumbers = false;
+
+        GameObject backgroundObject = new GameObject("Background");
+        backgroundObject.transform.SetParent(sliderObject.transform, false);
+
+        Image backgroundImage = backgroundObject.AddComponent<Image>();
+        backgroundImage.sprite = CreateSliderTrackSprite(
+            520,
+            28,
+            14,
+            new Color32(45, 28, 80, 255),
+            new Color32(160, 130, 210, 255)
+        );
+        backgroundImage.type = Image.Type.Simple;
+
+        RectTransform backgroundRect = backgroundObject.GetComponent<RectTransform>();
+        backgroundRect.anchorMin = new Vector2(0f, 0.5f);
+        backgroundRect.anchorMax = new Vector2(1f, 0.5f);
+        backgroundRect.pivot = new Vector2(0.5f, 0.5f);
+        backgroundRect.anchoredPosition = Vector2.zero;
+        backgroundRect.sizeDelta = new Vector2(0f, 28f);
+
+        GameObject fillAreaObject = new GameObject("Fill Area");
+        fillAreaObject.transform.SetParent(sliderObject.transform, false);
+
+        RectTransform fillAreaRect = fillAreaObject.AddComponent<RectTransform>();
+        fillAreaRect.anchorMin = new Vector2(0f, 0.5f);
+        fillAreaRect.anchorMax = new Vector2(1f, 0.5f);
+        fillAreaRect.pivot = new Vector2(0.5f, 0.5f);
+        fillAreaRect.anchoredPosition = Vector2.zero;
+        fillAreaRect.sizeDelta = new Vector2(-32f, 28f);
+
+        GameObject fillObject = new GameObject("Fill");
+        fillObject.transform.SetParent(fillAreaObject.transform, false);
+
+        Image fillImage = fillObject.AddComponent<Image>();
+        fillImage.sprite = CreateSliderTrackSprite(
+            520,
+            28,
+            14,
+            new Color32(255, 220, 45, 255),
+            new Color32(235, 135, 22, 255)
+        );
+        fillImage.type = Image.Type.Simple;
+
+        RectTransform fillRect = fillObject.GetComponent<RectTransform>();
+        fillRect.anchorMin = Vector2.zero;
+        fillRect.anchorMax = Vector2.one;
+        fillRect.offsetMin = Vector2.zero;
+        fillRect.offsetMax = Vector2.zero;
+
+        GameObject handleAreaObject = new GameObject("Handle Slide Area");
+        handleAreaObject.transform.SetParent(sliderObject.transform, false);
+
+        RectTransform handleAreaRect = handleAreaObject.AddComponent<RectTransform>();
+        handleAreaRect.anchorMin = Vector2.zero;
+        handleAreaRect.anchorMax = Vector2.one;
+        handleAreaRect.offsetMin = new Vector2(18f, 0f);
+        handleAreaRect.offsetMax = new Vector2(-18f, 0f);
+
+        GameObject handleObject = new GameObject("Handle");
+        handleObject.transform.SetParent(handleAreaObject.transform, false);
+
+        Image handleImage = handleObject.AddComponent<Image>();
+        handleImage.sprite = CreateCircleSprite(
+            48,
+            new Color32(255, 235, 95, 255),
+            new Color32(145, 75, 20, 255)
+        );
+        handleImage.type = Image.Type.Simple;
+
+        RectTransform handleRect = handleObject.GetComponent<RectTransform>();
+        handleRect.sizeDelta = new Vector2(48f, 48f);
+
+        sfxVolumeSlider.fillRect = fillRect;
+        sfxVolumeSlider.handleRect = handleRect;
+        sfxVolumeSlider.targetGraphic = handleImage;
+
+        sfxVolumeSlider.value = sfxVolume;
+        sfxVolumeSlider.onValueChanged.AddListener(OnSfxVolumeChanged);
+
+        UpdateSfxVolumeText();
+    }
+
+    private void OnMusicVolumeChanged(float value)
+    {
+        musicVolume = value;
+
+        PlayerPrefs.SetFloat(MusicVolumeKey, musicVolume);
+        PlayerPrefs.Save();
+
+        UpdateMusicVolumeText();
+
+        if (MusicManager.Instance != null)
+        {
+            MusicManager.Instance.SetVolume(musicVolume);
+        }
+    }
+
+    private void UpdateMusicVolumeText()
+    {
+        if (musicVolumeText == null)
+        {
+            return;
+        }
+
+        int percentage = Mathf.RoundToInt(musicVolume * 100f);
+        musicVolumeText.text = "MUSIC VOLUME: " + percentage + "%";
+    }
+
+    private void OnSfxVolumeChanged(float value)
+    {
+        sfxVolume = value;
+
+        PlayerPrefs.SetFloat(SfxVolumeKey, sfxVolume);
+        PlayerPrefs.Save();
+
+        UpdateSfxVolumeText();
+
+        if (SfxManager.Instance != null)
+        {
+            SfxManager.Instance.SetVolume(sfxVolume);
+        }
+    }
+
+    private void UpdateSfxVolumeText()
+    {
+        if (sfxVolumeText == null)
+        {
+            return;
+        }
+
+        int percentage = Mathf.RoundToInt(sfxVolume * 100f);
+        sfxVolumeText.text = "SFX VOLUME: " + percentage + "%";
+    }
+
+    private void UpdateOptionsTexts()
+    {
+        UpdateMusicVolumeText();
+        UpdateSfxVolumeText();
+    }
+
+    private void CloseOptionsPopup()
+    {
+        if (optionsPopupObject != null)
+        {
+            optionsPopupObject.SetActive(false);
+        }
+    }
 
     private Sprite CreatePurpleGridSprite(int width, int height, int cellCount)
     {
@@ -864,125 +947,156 @@ private void CloseOptionsPopup()
     }
 
     private Sprite CreateRoundedPanelSprite(int width, int height, int radius)
-{
-    Texture2D texture = new Texture2D(width, height);
-    texture.filterMode = FilterMode.Bilinear;
-
-    Color topColor = new Color32(95, 58, 150, 245);
-    Color bottomColor = new Color32(42, 24, 82, 245);
-    Color borderColor = new Color32(190, 155, 235, 255);
-
-    int borderThickness = 6;
-
-    for (int y = 0; y < height; y++)
     {
-        for (int x = 0; x < width; x++)
+        Texture2D texture = new Texture2D(width, height);
+        texture.filterMode = FilterMode.Bilinear;
+
+        Color topColor = new Color32(95, 58, 150, 245);
+        Color bottomColor = new Color32(42, 24, 82, 245);
+        Color borderColor = new Color32(190, 155, 235, 255);
+
+        int borderThickness = 6;
+
+        for (int y = 0; y < height; y++)
         {
-            float distance = GetRoundedRectDistance(x, y, width, height, radius);
-
-            if (distance > 0f)
+            for (int x = 0; x < width; x++)
             {
-                texture.SetPixel(x, y, Color.clear);
-                continue;
-            }
+                float distance = GetRoundedRectDistance(x, y, width, height, radius);
 
-            float t = (float)y / (height - 1);
-            Color baseColor = Color.Lerp(bottomColor, topColor, t);
+                if (distance > 0f)
+                {
+                    texture.SetPixel(x, y, Color.clear);
+                    continue;
+                }
 
-            bool isBorder = distance > -borderThickness;
+                float t = (float)y / (height - 1);
+                Color baseColor = Color.Lerp(bottomColor, topColor, t);
 
-            if (isBorder)
-            {
-                texture.SetPixel(x, y, borderColor);
-            }
-            else
-            {
-                texture.SetPixel(x, y, baseColor);
+                bool isBorder = distance > -borderThickness;
+
+                if (isBorder)
+                {
+                    texture.SetPixel(x, y, borderColor);
+                }
+                else
+                {
+                    texture.SetPixel(x, y, baseColor);
+                }
             }
         }
+
+        texture.Apply();
+
+        return Sprite.Create(
+            texture,
+            new Rect(0, 0, width, height),
+            new Vector2(0.5f, 0.5f),
+            100f
+        );
     }
 
-    texture.Apply();
-
-    return Sprite.Create(
-        texture,
-        new Rect(0, 0, width, height),
-        new Vector2(0.5f, 0.5f),
-        100f
-    );
-}
-
-private Sprite CreateSliderTrackSprite(int width, int height, int radius, Color leftColor, Color rightColor)
-{
-    Texture2D texture = new Texture2D(width, height);
-    texture.filterMode = FilterMode.Bilinear;
-
-    for (int y = 0; y < height; y++)
+    private Sprite CreateSliderTrackSprite(int width, int height, int radius, Color leftColor, Color rightColor)
     {
-        for (int x = 0; x < width; x++)
+        Texture2D texture = new Texture2D(width, height);
+        texture.filterMode = FilterMode.Bilinear;
+
+        for (int y = 0; y < height; y++)
         {
-            float distance = GetRoundedRectDistance(x, y, width, height, radius);
-
-            if (distance > 0f)
+            for (int x = 0; x < width; x++)
             {
-                texture.SetPixel(x, y, Color.clear);
-                continue;
-            }
+                float distance = GetRoundedRectDistance(x, y, width, height, radius);
 
-            float t = (float)x / (width - 1);
-            texture.SetPixel(x, y, Color.Lerp(leftColor, rightColor, t));
-        }
-    }
+                if (distance > 0f)
+                {
+                    texture.SetPixel(x, y, Color.clear);
+                    continue;
+                }
 
-    texture.Apply();
-
-    return Sprite.Create(
-        texture,
-        new Rect(0, 0, width, height),
-        new Vector2(0.5f, 0.5f),
-        100f
-    );
-}
-
-private Sprite CreateCircleSprite(int size, Color fillColor, Color borderColor)
-{
-    Texture2D texture = new Texture2D(size, size);
-    texture.filterMode = FilterMode.Bilinear;
-
-    Vector2 center = new Vector2(size / 2f, size / 2f);
-    float radius = size / 2f - 2f;
-    float borderRadius = radius - 5f;
-
-    for (int y = 0; y < size; y++)
-    {
-        for (int x = 0; x < size; x++)
-        {
-            float distance = Vector2.Distance(new Vector2(x, y), center);
-
-            if (distance > radius)
-            {
-                texture.SetPixel(x, y, Color.clear);
-            }
-            else if (distance > borderRadius)
-            {
-                texture.SetPixel(x, y, borderColor);
-            }
-            else
-            {
-                texture.SetPixel(x, y, fillColor);
+                float t = (float)x / (width - 1);
+                texture.SetPixel(x, y, Color.Lerp(leftColor, rightColor, t));
             }
         }
+
+        texture.Apply();
+
+        return Sprite.Create(
+            texture,
+            new Rect(0, 0, width, height),
+            new Vector2(0.5f, 0.5f),
+            100f
+        );
     }
 
-    texture.Apply();
+    private Sprite CreateCircleSprite(int size, Color fillColor, Color borderColor)
+    {
+        Texture2D texture = new Texture2D(size, size);
+        texture.filterMode = FilterMode.Bilinear;
 
-    return Sprite.Create(
-        texture,
-        new Rect(0, 0, size, size),
-        new Vector2(0.5f, 0.5f),
-        100f
-    );
-}
+        Vector2 center = new Vector2(size / 2f, size / 2f);
+        float radius = size / 2f - 2f;
+        float borderRadius = radius - 5f;
+
+        for (int y = 0; y < size; y++)
+        {
+            for (int x = 0; x < size; x++)
+            {
+                float distance = Vector2.Distance(new Vector2(x, y), center);
+
+                if (distance > radius)
+                {
+                    texture.SetPixel(x, y, Color.clear);
+                }
+                else if (distance > borderRadius)
+                {
+                    texture.SetPixel(x, y, borderColor);
+                }
+                else
+                {
+                    texture.SetPixel(x, y, fillColor);
+                }
+            }
+        }
+
+        texture.Apply();
+
+        return Sprite.Create(
+            texture,
+            new Rect(0, 0, size, size),
+            new Vector2(0.5f, 0.5f),
+            100f
+        );
+    }
+
+    private Sprite CreateSimpleBlockSprite(int size, int radius)
+    {
+        Texture2D texture = new Texture2D(size, size);
+        texture.filterMode = FilterMode.Bilinear;
+
+        for (int y = 0; y < size; y++)
+        {
+            for (int x = 0; x < size; x++)
+            {
+                float distance = GetRoundedRectDistance(x, y, size, size, radius);
+
+                if (distance > 0f)
+                {
+                    texture.SetPixel(x, y, Color.clear);
+                }
+                else
+                {
+                    float t = (x + (size - y)) / (float)(size * 2);
+                    Color c = Color.Lerp(Color.white, new Color(0.8f, 0.8f, 0.8f, 1f), t);
+
+                    if (distance > -3f) c = new Color(1f, 1f, 1f, 0.4f);
+
+                    texture.SetPixel(x, y, c);
+                }
+            }
+        }
+
+        texture.Apply();
+        return Sprite.Create(texture, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f);
+    }
 
     private float GetRoundedRectDistance(int x, int y, int width, int height, int radius)
     {
@@ -1037,18 +1151,146 @@ private Sprite CreateCircleSprite(int size, Color fillColor, Color borderColor)
             optionsPopupObject.SetActive(true);
         }
     }
-    
+
     private void OnExitClicked()
-{
-    Debug.Log("Exit clicked.");
+    {
+        Debug.Log("Exit clicked.");
 
 #if UNITY_EDITOR
-    UnityEditor.EditorApplication.isPlaying = false;
+        UnityEditor.EditorApplication.isPlaying = false;
 #else
-    Application.Quit();
+        Application.Quit();
 #endif
+    }
 }
 
+// -------------------------------------------------------------------------
+// YARDIMCI VE YENİ SINIFLAR
+// -------------------------------------------------------------------------
+
+public class FlyingBlocksManager : MonoBehaviour
+{
+    public Sprite blockSprite;
+
+    private float spawnTimer;
+
+    private class BlockData
+    {
+        public RectTransform rect;
+        public Vector2 velocity;
+        public float rotationSpeed;
+    }
+
+    private List<BlockData> activeBlocks = new List<BlockData>();
+    private Color[] blockColors = {
+        Color.cyan,
+        Color.magenta,
+        Color.yellow,
+        new Color(1f, 0.5f, 0f),
+        Color.green,
+        new Color(1f, 0.2f, 0.3f)
+    };
+
+    private void Start()
+    {
+        for (int i = 0; i < 8; i++)
+        {
+            SpawnBlock(true);
+        }
+    }
+
+    private void Update()
+    {
+        spawnTimer -= Time.deltaTime;
+        if (spawnTimer <= 0)
+        {
+            SpawnBlock(false);
+            spawnTimer = Random.Range(1.0f, 2.5f);
+        }
+
+        for (int i = activeBlocks.Count - 1; i >= 0; i--)
+        {
+            BlockData b = activeBlocks[i];
+            if (b.rect == null)
+            {
+                activeBlocks.RemoveAt(i);
+                continue;
+            }
+
+            b.rect.anchoredPosition += b.velocity * Time.deltaTime;
+            b.rect.Rotate(0, 0, b.rotationSpeed * Time.deltaTime);
+
+            if (Mathf.Abs(b.rect.anchoredPosition.x) > 1200f || Mathf.Abs(b.rect.anchoredPosition.y) > 2200f)
+            {
+                Destroy(b.rect.gameObject);
+                activeBlocks.RemoveAt(i);
+            }
+        }
+    }
+
+    private void SpawnBlock(bool randomInsideScreen)
+    {
+        GameObject go = new GameObject("FlyingBlock");
+        go.transform.SetParent(transform, false);
+
+        Image img = go.AddComponent<Image>();
+        img.sprite = blockSprite;
+
+        Color c = blockColors[Random.Range(0, blockColors.Length)];
+        c.a = Random.Range(0.1f, 0.3f);
+        img.color = c;
+
+        RectTransform rect = go.GetComponent<RectTransform>();
+
+        // Boyutlar korundu
+        float size = Random.Range(90f, 280f);
+        rect.sizeDelta = new Vector2(size, size);
+
+        Vector2 startPos = Vector2.zero;
+        Vector2 vel = Vector2.zero;
+
+        float halfW = 1080f / 2f + 100f;
+        float halfH = 1920f / 2f + 100f;
+        float speed = Random.Range(50f, 250f);
+
+        if (randomInsideScreen)
+        {
+            startPos = new Vector2(Random.Range(-halfW, halfW), Random.Range(-halfH, halfH));
+            vel = new Vector2(Random.Range(-speed, speed), Random.Range(-speed, speed));
+        }
+        else
+        {
+            int side = Random.Range(0, 4);
+            switch (side)
+            {
+                case 0:
+                    startPos = new Vector2(-halfW, Random.Range(-halfH, halfH));
+                    vel = new Vector2(speed, Random.Range(-speed * 0.5f, speed * 0.5f));
+                    break;
+                case 1:
+                    startPos = new Vector2(halfW, Random.Range(-halfH, halfH));
+                    vel = new Vector2(-speed, Random.Range(-speed * 0.5f, speed * 0.5f));
+                    break;
+                case 2:
+                    startPos = new Vector2(Random.Range(-halfW, halfW), -halfH);
+                    vel = new Vector2(Random.Range(-speed * 0.5f, speed * 0.5f), speed);
+                    break;
+                case 3:
+                    startPos = new Vector2(Random.Range(-halfW, halfW), halfH);
+                    vel = new Vector2(Random.Range(-speed * 0.5f, speed * 0.5f), -speed);
+                    break;
+            }
+        }
+
+        rect.anchoredPosition = startPos;
+
+        BlockData bd = new BlockData();
+        bd.rect = rect;
+        bd.velocity = vel;
+        bd.rotationSpeed = Random.Range(-150f, 150f);
+
+        activeBlocks.Add(bd);
+    }
 }
 
 public class HorizontalGradientText : BaseMeshEffect
