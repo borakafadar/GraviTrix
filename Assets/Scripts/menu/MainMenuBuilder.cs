@@ -13,6 +13,9 @@ public class MainMenuBuilder : MonoBehaviour
     [SerializeField] private Font titleFont;
     [SerializeField] private Font buttonFont;
 
+    [Header("Music")]
+    [SerializeField] private AudioClip musicClip;
+
     [Header("Layout")]
     [SerializeField] private Vector2 referenceResolution = new Vector2(1080, 1920);
 
@@ -52,6 +55,27 @@ public class MainMenuBuilder : MonoBehaviour
         CreateMenuButtons();
         CreateOptionsPopup();
         CreateEventSystemIfNeeded();
+        CreateMusicManager();
+    }
+
+    private void CreateMusicManager()
+    {
+        if (MusicManager.Instance == null)
+        {
+            GameObject musicManagerObject = new GameObject("MusicManager");
+            MusicManager manager = musicManagerObject.AddComponent<MusicManager>();
+
+            if (musicClip != null)
+            {
+                manager.PlayMusic(musicClip);
+            }
+        }
+
+        if (SfxManager.Instance == null)
+        {
+            GameObject sfxManagerObject = new GameObject("SfxManager");
+            sfxManagerObject.AddComponent<SfxManager>();
+        }
     }
 
     private void CreateMenuCamera()
@@ -662,8 +686,10 @@ private void OnMusicVolumeChanged(float value)
 
     UpdateMusicVolumeText();
 
-    // Later, when you add music:
-    // musicAudioSource.volume = musicVolume;
+    if (MusicManager.Instance != null)
+    {
+        MusicManager.Instance.SetVolume(musicVolume);
+    }
 }
 
 private void UpdateMusicVolumeText()
@@ -686,8 +712,10 @@ private void OnSfxVolumeChanged(float value)
 
     UpdateSfxVolumeText();
 
-    // Later, when you add sound effects:
-    // sfxAudioSource.volume = sfxVolume;
+    if (SfxManager.Instance != null)
+    {
+        SfxManager.Instance.SetVolume(sfxVolume);
+    }
 }
 
 private void UpdateSfxVolumeText()

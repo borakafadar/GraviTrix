@@ -228,6 +228,7 @@ namespace GraviTrix.Core
                 if (!board.CanOccupy(activePiece.GetWorldCells()))
                 {
                     phase = GamePhase.GameOver;
+                    if (SfxManager.Instance != null) SfxManager.Instance.PlayGameOver();
                     activePiece = null;
                 }
                 else
@@ -258,6 +259,7 @@ namespace GraviTrix.Core
             if (activePiece == null)
             {
                 phase = GamePhase.GameOver;
+                if (SfxManager.Instance != null) SfxManager.Instance.PlayGameOver();
                 UpdateHud();
                 return;
             }
@@ -265,6 +267,7 @@ namespace GraviTrix.Core
             if (!board.CanOccupy(activePiece.GetWorldCells()))
             {
                 phase = GamePhase.GameOver;
+                if (SfxManager.Instance != null) SfxManager.Instance.PlayGameOver();
                 activePiece = null;
                 UpdateHud();
                 RefreshViews();
@@ -349,6 +352,11 @@ namespace GraviTrix.Core
                 {
                     boardView.PlayMeltAnimation(cellsToAnimate, 0.5f);
                 }
+
+                if (SfxManager.Instance != null)
+                {
+                    SfxManager.Instance.PlayLavaMelt();
+                }
             }
         }
 
@@ -359,6 +367,23 @@ namespace GraviTrix.Core
             if (activePiece == null)
             {
                 return;
+            }
+
+            // Play the appropriate drop SFX based on block kind
+            if (SfxManager.Instance != null)
+            {
+                if (activePiece.ContainsKind(BlockKind.Metal))
+                {
+                    SfxManager.Instance.PlayMetalBlockDrop();
+                }
+                else if (activePiece.ContainsKind(BlockKind.Lava))
+                {
+                    SfxManager.Instance.PlayLavaMelt();
+                }
+                else
+                {
+                    SfxManager.Instance.PlayBlockDrop();
+                }
             }
 
             var cells = activePiece.GetWorldCells();
@@ -412,6 +437,11 @@ namespace GraviTrix.Core
                 phaseTimer = 0.4f;
                 activePiece = null;
 
+                if (SfxManager.Instance != null)
+                {
+                    SfxManager.Instance.PlayLineClear();
+                }
+
                 boardView.PlayClearAnimation(cellsToAnimate, 0.4f);
                 UpdateHud();
                 RefreshViews();
@@ -439,6 +469,11 @@ namespace GraviTrix.Core
             activePiece = null;
             phase = GamePhase.RotatingBoard;
             UpdateHud();
+
+            if (SfxManager.Instance != null)
+            {
+                SfxManager.Instance.PlayGravityChange();
+            }
             
             bool rotateLeft = !isBoardRotated;
             if (boardView != null)
@@ -507,6 +542,11 @@ namespace GraviTrix.Core
 
                 phase = GamePhase.ClearingLines;
                 phaseTimer = 0.4f;
+
+                if (SfxManager.Instance != null)
+                {
+                    SfxManager.Instance.PlayLineClear();
+                }
 
                 if (boardView != null)
                 {
