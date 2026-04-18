@@ -106,9 +106,9 @@ namespace GraviTrix.Core
             }
         }
 
-        public int ClearFullRows()
+        public List<int> GetFullRows()
         {
-            List<int> rowsToRemove = new List<int>();
+            List<int> fullRows = new List<int>();
 
             for (int y = 0; y < height; y++)
             {
@@ -125,11 +125,76 @@ namespace GraviTrix.Core
 
                 if (fullRow)
                 {
-                    rowsToRemove.Add(y);
+                    fullRows.Add(y);
                 }
             }
 
-            return ClearRows(rowsToRemove);
+            return fullRows;
+        }
+
+        public List<BlockCellInfo> GetCellsInRows(IEnumerable<int> rows)
+        {
+            List<BlockCellInfo> cells = new List<BlockCellInfo>();
+            HashSet<int> rowSet = new HashSet<int>(rows);
+
+            for (int y = 0; y < height; y++)
+            {
+                if (!rowSet.Contains(y))
+                {
+                    continue;
+                }
+
+                for (int x = 0; x < width; x++)
+                {
+                    if (occupied[x, y])
+                    {
+                        CellOccupant occupant = occupants[x, y];
+                        cells.Add(new BlockCellInfo(new Vector2Int(x, y), occupant.Kind, occupant.VisualType));
+                    }
+                }
+            }
+
+            return cells;
+        }
+
+        public List<BlockCellInfo> GetAllCellsInRows(IEnumerable<int> rows)
+        {
+            List<BlockCellInfo> cells = new List<BlockCellInfo>();
+            HashSet<int> rowSet = new HashSet<int>(rows);
+
+            for (int y = 0; y < height; y++)
+            {
+                if (!rowSet.Contains(y))
+                {
+                    continue;
+                }
+
+                for (int x = 0; x < width; x++)
+                {
+                    cells.Add(new BlockCellInfo(new Vector2Int(x, y), BlockKind.Normal, BlockVisualType.Auto));
+                }
+            }
+
+            return cells;
+        }
+
+        public List<BlockCellInfo> GetCells(IEnumerable<Vector2Int> positions)
+        {
+            List<BlockCellInfo> cells = new List<BlockCellInfo>();
+            foreach (Vector2Int pos in positions)
+            {
+                if (IsOccupied(pos))
+                {
+                    CellOccupant occupant = occupants[pos.x, pos.y];
+                    cells.Add(new BlockCellInfo(pos, occupant.Kind, occupant.VisualType));
+                }
+            }
+            return cells;
+        }
+
+        public int ClearFullRows()
+        {
+            return ClearRows(GetFullRows());
         }
 
         public int ClearRows(IReadOnlyCollection<int> rowsToRemove)
@@ -172,7 +237,7 @@ namespace GraviTrix.Core
             return rowsToRemove.Count;
         }
 
-        public void RotateLeftAndSettle()
+        public int RotateLeftAndSettle()
         {
             List<BlockCellInfo> cells = new List<BlockCellInfo>();
 
@@ -185,7 +250,7 @@ namespace GraviTrix.Core
 
             if (cells.Count == 0)
             {
-                return;
+                return 0;
             }
 
             List<BlockCellInfo> rotatedCells = new List<BlockCellInfo>(cells.Count);
@@ -215,11 +280,65 @@ namespace GraviTrix.Core
                     occupants[finalPosition.x, finalPosition.y] = new CellOccupant(cell.Kind, cell.VisualType);
                 }
             }
+
+            return dropAmount;
         }
 
         public Vector2Int RotateBoardPositionLeft(Vector2Int position)
         {
             return new Vector2Int(position.y, width - 1 - position.x);
+        }
+
+        public int RotateRightAndSettle()
+        {
+            List<BlockCellInfo> cells = new List<BlockCellInfo>();
+
+            foreach (BlockCellInfo cell in GetOccupiedCells())
+            {
+                cells.Add(cell);
+            }
+
+            Clear();
+
+            if (cells.Count == 0)
+            {
+                return 0;
+            }
+
+            List<BlockCellInfo> rotatedCells = new List<BlockCellInfo>(cells.Count);
+            int maxY = int.MinValue;
+
+            for (int index = 0; index < cells.Count; index++)
+            {
+                BlockCellInfo cell = cells[index];
+                Vector2Int rotatedPosition = RotateBoardPositionRight(cell.Position);
+                rotatedCells.Add(new BlockCellInfo(rotatedPosition, cell.Kind, cell.VisualType));
+
+                if (rotatedPosition.y > maxY)
+                {
+                    maxY = rotatedPosition.y;
+                }
+            }
+
+            int dropAmount = Mathf.Max(0, height - 1 - maxY);
+
+            for (int index = 0; index < rotatedCells.Count; index++)
+            {
+                BlockCellInfo cell = rotatedCells[index];
+                Vector2Int finalPosition = new Vector2Int(cell.Position.x, cell.Position.y + dropAmount);
+                if (IsInside(finalPosition))
+                {
+                    occupied[finalPosition.x, finalPosition.y] = true;
+                    occupants[finalPosition.x, finalPosition.y] = new CellOccupant(cell.Kind, cell.VisualType);
+                }
+            }
+
+            return dropAmount;
+        }
+
+        public Vector2Int RotateBoardPositionRight(Vector2Int position)
+        {
+            return new Vector2Int(height - 1 - position.y, position.x);
         }
 
         private void CopyRow(int sourceRow, int destinationRow)

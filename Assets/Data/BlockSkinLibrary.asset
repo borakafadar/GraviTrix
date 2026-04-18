@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e7a88cf2db7dd5143a93f7f4f7918827, type: 3}
+  m_Name: BlockSkinLibrary
+  m_EditorClassIdentifier: Assembly-CSharp::GraviTrix.Runtime.BlockSkinLibrary
+  yellow: {fileID: 1645498831349786585, guid: 55010cfa72a53dc49b687f0744b541f3, type: 3}
+  cyan: {fileID: -563409471026359749, guid: 266300224e5031945bfbb0eb274331be, type: 3}
+  green: {fileID: -2026419367579236614, guid: a85a373d4657b22439360aebab6fb3c4, type: 3}
+  blue: {fileID: -4094908649810790179, guid: c4559b1894f5be647aff5d5be70e2f0a, type: 3}
+  orange: {fileID: 4105771393644882285, guid: 7ababe0c779663e4986bc977f86244db, type: 3}
+  pink: {fileID: 4849278490384386864, guid: 29cc2165788199749b3eae83551c92ac, type: 3}
+  red: {fileID: -5769572330233735633, guid: 64ed6018557f0d745b547720ca4f5d26, type: 3}
+  deepBlue: {fileID: -1463034289895254110, guid: d8eda54b79244a8409421af98f7b209c, type: 3}
+  metal: {fileID: 3832477751378960149, guid: 67b9b3eae8016134b9a4d65e0463802a, type: 3}
+  lava: {fileID: -6141011602630177560, guid: e97562c02026a8f449174a004eaf7dda, type: 3}
+  line: {fileID: 6987477901018549035, guid: 187731f85eed0f947bd2c4fcde1da52e, type: 3}

@@ -59,7 +59,7 @@ SpriteRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: a97c105638bdf8b4a8650670310a4cd3, type: 2}
+  - {fileID: 10754, guid: 0000000000000000f000000000000000, type: 0}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -105,8 +105,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GraviTrix.Runtime.BlockCellView
   spriteRenderer: {fileID: 0}
-  skinLibrary: {fileID: 0}
-  normalColor: {r: 0.25, g: 0.75, b: 1, a: 1}
+  skinLibrary: {fileID: 11400000, guid: 3dfd6795771cbdf4ea314dce82581e81, type: 2}
+  normalColor: {r: 1, g: 1, b: 1, a: 1}
   lavaColor: {r: 1, g: 0.35, b: 0.1, a: 1}
   metalColor: {r: 0.75, g: 0.8, b: 0.85, a: 1}
   lineColor: {r: 1, g: 0.9, b: 0.25, a: 1}

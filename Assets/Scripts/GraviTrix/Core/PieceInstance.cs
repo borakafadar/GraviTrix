@@ -7,6 +7,27 @@ namespace GraviTrix.Core
     {
         private readonly Vector2Int pivot;
         private readonly List<BlockCellState> cells;
+        private readonly List<BlockCellState> originalCells;
+
+        public PieceInstance(Vector2Int origin, Vector2Int pivot, IEnumerable<BlockCellState> runtimeCells)
+        {
+            Definition = null;
+            Origin = origin;
+            this.pivot = pivot;
+            cells = new List<BlockCellState>();
+            originalCells = new List<BlockCellState>();
+
+            if (runtimeCells == null)
+            {
+                return;
+            }
+
+            foreach (BlockCellState cell in runtimeCells)
+            {
+                cells.Add(cell);
+                originalCells.Add(cell);
+            }
+        }
 
         public PieceInstance(PieceDefinition definition, Vector2Int origin)
         {
@@ -14,13 +35,25 @@ namespace GraviTrix.Core
             Origin = origin;
             pivot = definition != null ? definition.Pivot : Vector2Int.zero;
             cells = new List<BlockCellState>();
+            originalCells = new List<BlockCellState>();
 
             if (definition != null)
             {
                 foreach (BlockCellState cell in definition.CreateRuntimeCells())
                 {
                     cells.Add(cell);
+                    originalCells.Add(cell);
                 }
+            }
+        }
+
+        public void Reset(Vector2Int newOrigin)
+        {
+            Origin = newOrigin;
+            cells.Clear();
+            foreach (BlockCellState cell in originalCells)
+            {
+                cells.Add(cell);
             }
         }
 
@@ -113,7 +146,7 @@ namespace GraviTrix.Core
             return true;
         }
 
-        private IEnumerable<BlockCellInfo> GetWorldCellsAtOrigin(Vector2Int origin)
+        public IEnumerable<BlockCellInfo> GetWorldCellsAtOrigin(Vector2Int origin)
         {
             for (int index = 0; index < cells.Count; index++)
             {

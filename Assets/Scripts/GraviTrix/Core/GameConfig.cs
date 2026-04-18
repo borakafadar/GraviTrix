@@ -25,6 +25,8 @@ namespace GraviTrix.Core
         [SerializeField] private int tripleLineScore = 500;
         [SerializeField] private int tetrisScore = 800;
         [SerializeField] private float rotationClearBonusMultiplier = 1.5f;
+        [SerializeField] private int comboBonus = 50;
+        [SerializeField] private int lavaMeltScore = 10;
 
         public int BoardWidth => boardWidth;
         public int BoardHeight => boardHeight;
@@ -35,6 +37,8 @@ namespace GraviTrix.Core
         public int MinMovesBeforeRotation => minMovesBeforeRotation;
         public int MaxMovesBeforeRotation => maxMovesBeforeRotation;
         public float RotationClearBonusMultiplier => rotationClearBonusMultiplier;
+        public int ComboBonus => comboBonus;
+        public int LavaMeltScore => lavaMeltScore;
 
         public int GetRandomMovesBeforeRotation()
         {

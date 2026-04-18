@@ -7,9 +7,14 @@ namespace GraviTrix.Core
 {
     public sealed class GameController : MonoBehaviour
     {
+        private const int FixedBoardSize = 12;
+        private const float MinFallInterval = 0.05f;
+        private static readonly Vector2Int DownVector = new Vector2Int(0, 1);
+
         [Header("Data")]
         [SerializeField] private GameConfig config;
         [SerializeField] private PieceLibrary pieceLibrary;
+        [SerializeField] private int pointsPerBlock = 10;
 
         [Header("Views")]
         [SerializeField] private BoardView boardView;
@@ -17,20 +22,33 @@ namespace GraviTrix.Core
 
         private BoardGrid board;
         private PieceInstance activePiece;
+        private PieceInstance nextPiece;
+        private PieceInstance heldPiece;
+        private bool canHold = true;
         private GamePhase phase = GamePhase.Spawning;
         private float fallAccumulator;
         private float phaseTimer;
         private int score;
         private int movesUntilRotation;
         private int movesBeforeRotationTarget;
+        private bool isBoardRotated;
+        private int comboCount;
+
+        private List<int> pendingLineRowsToClear = new List<int>();
+        private HashSet<Vector2Int> hiddenCells = new HashSet<Vector2Int>();
+        private bool pendingIsRotation;
 
         public int Score => score;
         public GamePhase Phase => phase;
         public int MovesUntilRotation => movesUntilRotation;
+        
+        public PieceInstance ActivePiece => activePiece;
+        public PieceInstance NextPiece => nextPiece;
+        public PieceInstance HeldPiece => heldPiece;
 
         private void Awake()
         {
-            board = new BoardGrid(config != null ? config.BoardWidth : 12, config != null ? config.BoardHeight : 12);
+            board = new BoardGrid(FixedBoardSize, FixedBoardSize);
         }
 
         private void Start()
@@ -40,19 +58,31 @@ namespace GraviTrix.Core
 
         private void Update()
         {
-            if (phase == GamePhase.GameOver || config == null || pieceLibrary == null)
+            if (phase == GamePhase.GameOver || config == null)
             {
+                return;
+            }
+
+            if (phase == GamePhase.Spawning && activePiece == null)
+            {
+                SpawnNextPiece();
+                UpdateHud();
                 return;
             }
 
             if (phase == GamePhase.RotatingBoard)
             {
+                UpdateHud();
+                return;
+            }
+
+            if (phase == GamePhase.ClearingLines)
+            {
                 phaseTimer -= Time.deltaTime;
                 if (phaseTimer <= 0f)
                 {
-                    FinishBoardRotation();
+                    ApplyPendingClears();
                 }
-
                 UpdateHud();
                 return;
             }
@@ -64,12 +94,12 @@ namespace GraviTrix.Core
             }
 
             fallAccumulator += Time.deltaTime;
-            float fallInterval = activePiece.GetFallInterval(config);
+            float fallInterval = Mathf.Max(MinFallInterval, activePiece.GetFallInterval(config));
 
             while (fallAccumulator >= fallInterval && phase == GamePhase.Falling)
             {
                 fallAccumulator -= fallInterval;
-                if (!TryAdvancePiece(Vector2Int.down))
+                if (!TryAdvancePiece(DownVector))
                 {
                     LockActivePiece();
                     break;
@@ -77,17 +107,24 @@ namespace GraviTrix.Core
             }
 
             UpdateHud();
-            RefreshViews();
         }
 
         public void RestartGame()
         {
+            Time.timeScale = 1f;
             board.Clear();
             score = 0;
             activePiece = null;
+            nextPiece = null;
+            heldPiece = null;
+            canHold = true;
             phase = GamePhase.Spawning;
             fallAccumulator = 0f;
-            if (config == null || pieceLibrary == null)
+            isBoardRotated = false;
+            comboCount = 0;
+            pendingLineRowsToClear.Clear();
+            hiddenCells.Clear();
+            if (config == null)
             {
                 phase = GamePhase.GameOver;
                 movesBeforeRotationTarget = 0;
@@ -143,7 +180,7 @@ namespace GraviTrix.Core
         {
             if (CanControlActivePiece())
             {
-                if (!TryAdvancePiece(Vector2Int.down))
+                if (!TryAdvancePiece(DownVector))
                 {
                     LockActivePiece();
                 }
@@ -157,11 +194,50 @@ namespace GraviTrix.Core
                 return;
             }
 
-            while (TryAdvancePiece(Vector2Int.down))
+            while (TryAdvancePiece(DownVector))
             {
             }
 
             LockActivePiece();
+        }
+
+        public void HoldPiece()
+        {
+            if (!CanControlActivePiece() || !canHold)
+            {
+                return;
+            }
+
+            canHold = false;
+
+            if (heldPiece == null)
+            {
+                heldPiece = activePiece;
+                heldPiece.Reset(GetSpawnOrigin());
+                SpawnNextPiece();
+            }
+            else
+            {
+                PieceInstance temp = activePiece;
+                activePiece = heldPiece;
+                heldPiece = temp;
+                
+                activePiece.Reset(GetSpawnOrigin());
+                heldPiece.Reset(GetSpawnOrigin());
+                
+                if (!board.CanOccupy(activePiece.GetWorldCells()))
+                {
+                    phase = GamePhase.GameOver;
+                    activePiece = null;
+                }
+                else
+                {
+                    fallAccumulator = 0f;
+                }
+            }
+
+            UpdateHud();
+            RefreshViews();
         }
 
         private bool CanControlActivePiece()
@@ -171,22 +247,20 @@ namespace GraviTrix.Core
 
         private void SpawnNextPiece()
         {
-            if (pieceLibrary.Count == 0)
-            {
-                phase = GamePhase.GameOver;
-                UpdateHud();
-                return;
-            }
-
-            PieceDefinition nextPiece = pieceLibrary.GetRandomPiece();
             if (nextPiece == null)
             {
+                nextPiece = FallbackPieceFactory.CreateRandom(GetSpawnOrigin());
+            }
+
+            activePiece = nextPiece;
+            nextPiece = FallbackPieceFactory.CreateRandom(GetSpawnOrigin());
+
+            if (activePiece == null)
+            {
                 phase = GamePhase.GameOver;
                 UpdateHud();
                 return;
             }
-
-            activePiece = new PieceInstance(nextPiece, GetSpawnOrigin());
 
             if (!board.CanOccupy(activePiece.GetWorldCells()))
             {
@@ -199,7 +273,28 @@ namespace GraviTrix.Core
 
             phase = GamePhase.Falling;
             fallAccumulator = 0f;
+            canHold = true;
             RefreshViews();
+        }
+
+        private bool TryCreatePieceFromLibrary(out PieceInstance instance)
+        {
+            instance = null;
+            return false;
+
+            if (pieceLibrary == null || pieceLibrary.Count == 0)
+            {
+                return false;
+            }
+
+            PieceDefinition nextPiece = pieceLibrary.GetRandomPiece();
+            if (nextPiece == null)
+            {
+                return false;
+            }
+
+            instance = new PieceInstance(nextPiece, GetSpawnOrigin());
+            return true;
         }
 
         private bool TryAdvancePiece(Vector2Int delta)
@@ -209,7 +304,7 @@ namespace GraviTrix.Core
                 return false;
             }
 
-            if (delta == Vector2Int.down && activePiece.ContainsKind(BlockKind.Lava))
+            if (delta == DownVector && activePiece.ContainsKind(BlockKind.Lava))
             {
                 TryBurnCellsUnderLava();
             }
@@ -234,7 +329,7 @@ namespace GraviTrix.Core
                     continue;
                 }
 
-                Vector2Int target = cell.Position + Vector2Int.down;
+                Vector2Int target = cell.Position + DownVector;
                 if (board.IsOccupied(target))
                 {
                     cellsToClear.Add(target);
@@ -244,6 +339,7 @@ namespace GraviTrix.Core
             if (cellsToClear.Count > 0)
             {
                 board.ClearCells(cellsToClear);
+                score += cellsToClear.Count * (config != null ? config.LavaMeltScore : pointsPerBlock);
             }
         }
 
@@ -253,6 +349,8 @@ namespace GraviTrix.Core
             {
                 return;
             }
+
+            board.TryPlace(activePiece.GetWorldCells());
 
             List<int> lineRowsToClear = new List<int>();
             HashSet<int> seenRows = new HashSet<int>();
@@ -265,17 +363,31 @@ namespace GraviTrix.Core
                 }
             }
 
-            board.TryPlace(activePiece.GetWorldCells());
-
-            if (lineRowsToClear.Count > 0)
+            List<int> fullRows = board.GetFullRows();
+            if (lineRowsToClear.Count > 0 || fullRows.Count > 0)
             {
-                int clearedByLine = board.ClearRows(lineRowsToClear);
-                score += config.GetLineClearScore(clearedByLine, false);
+                pendingLineRowsToClear = new List<int>(lineRowsToClear);
+                pendingIsRotation = false;
+
+                HashSet<int> combinedRows = new HashSet<int>(lineRowsToClear);
+                foreach (int r in fullRows) combinedRows.Add(r);
+                List<int> rowsList = new List<int>(combinedRows);
+
+                List<BlockCellInfo> cellsToAnimate = board.GetAllCellsInRows(rowsList);
+                hiddenCells.Clear();
+                foreach (var cell in cellsToAnimate) hiddenCells.Add(cell.Position);
+
+                phase = GamePhase.ClearingLines;
+                phaseTimer = 0.4f;
+                activePiece = null;
+
+                boardView.PlayClearAnimation(cellsToAnimate, 0.4f);
+                UpdateHud();
+                RefreshViews();
+                return;
             }
 
-            int clearedRows = board.ClearFullRows();
-            score += config.GetLineClearScore(clearedRows, false);
-
+            comboCount = 0;
             activePiece = null;
             phase = GamePhase.Spawning;
 
@@ -295,17 +407,69 @@ namespace GraviTrix.Core
         {
             activePiece = null;
             phase = GamePhase.RotatingBoard;
-            phaseTimer = config.BoardRotationPauseSeconds;
             UpdateHud();
+            
+            bool rotateLeft = !isBoardRotated;
+            if (boardView != null)
+            {
+                boardView.PlayBoardRotationAnimation(rotateLeft, FinishBoardRotation);
+            }
+            else
+            {
+                FinishBoardRotation();
+            }
         }
 
         private void FinishBoardRotation()
         {
-            board.RotateLeftAndSettle();
+            int dropAmount = 0;
+            if (!isBoardRotated)
+            {
+                dropAmount = board.RotateLeftAndSettle();
+                isBoardRotated = true;
+            }
+            else
+            {
+                dropAmount = board.RotateRightAndSettle();
+                isBoardRotated = false;
+            }
 
-            int clearedRows = board.ClearFullRows();
-            score += config.GetLineClearScore(clearedRows, true);
+            if (dropAmount > 0 && boardView != null)
+            {
+                RefreshViews();
+                boardView.PlayBoardDropAnimation(dropAmount, OnBoardDropComplete);
+            }
+            else
+            {
+                OnBoardDropComplete();
+            }
+        }
 
+        private void OnBoardDropComplete()
+        {
+            List<int> fullRows = board.GetFullRows();
+            if (fullRows.Count > 0)
+            {
+                pendingLineRowsToClear.Clear();
+                pendingIsRotation = true;
+
+                List<BlockCellInfo> cellsToAnimate = board.GetAllCellsInRows(fullRows);
+                hiddenCells.Clear();
+                foreach (var cell in cellsToAnimate) hiddenCells.Add(cell.Position);
+
+                phase = GamePhase.ClearingLines;
+                phaseTimer = 0.4f;
+
+                if (boardView != null)
+                {
+                    boardView.PlayClearAnimation(cellsToAnimate, 0.4f);
+                }
+                UpdateHud();
+                RefreshViews();
+                return;
+            }
+
+            comboCount = 0;
             movesBeforeRotationTarget = config.GetRandomMovesBeforeRotation();
             movesUntilRotation = movesBeforeRotationTarget;
 
@@ -315,14 +479,93 @@ namespace GraviTrix.Core
             RefreshViews();
         }
 
-        private Vector2Int GetSpawnOrigin()
+        private void ApplyPendingClears()
         {
-            if (config != null)
+            int totalClearedThisTurn = 0;
+
+            if (pendingLineRowsToClear.Count > 0)
             {
-                return config.SpawnOrigin;
+                int blocksDestroyedByLine = 0;
+                foreach (int rowY in pendingLineRowsToClear)
+                {
+                    for (int x = 0; x < board.Width; x++)
+                    {
+                        if (board.IsOccupied(new Vector2Int(x, rowY)))
+                        {
+                            blocksDestroyedByLine++;
+                        }
+                    }
+                }
+
+                board.ClearRows(pendingLineRowsToClear);
+                totalClearedThisTurn += pendingLineRowsToClear.Count;
+                score += config.GetLineClearScore(pendingLineRowsToClear.Count, false);
+                score += blocksDestroyedByLine * pointsPerBlock;
             }
 
-            return new Vector2Int(Mathf.Max(0, board.Width / 2 - 1), 0);
+            int clearedRows = board.ClearFullRows();
+            if (clearedRows > 0)
+            {
+                totalClearedThisTurn += clearedRows;
+                score += config.GetLineClearScore(clearedRows, pendingIsRotation);
+                score += (clearedRows * board.Width) * pointsPerBlock;
+            }
+
+            if (totalClearedThisTurn > 0)
+            {
+                if (config != null) score += config.ComboBonus * comboCount;
+                comboCount++;
+            }
+            else
+            {
+                comboCount = 0;
+            }
+
+            hiddenCells.Clear();
+
+            if (pendingIsRotation)
+            {
+                movesBeforeRotationTarget = config.GetRandomMovesBeforeRotation();
+                movesUntilRotation = movesBeforeRotationTarget;
+                phase = GamePhase.Spawning;
+                SpawnNextPiece();
+            }
+            else
+            {
+                movesUntilRotation--;
+                if (movesUntilRotation <= 0)
+                {
+                    BeginBoardRotation();
+                }
+                else
+                {
+                    phase = GamePhase.Spawning;
+                    SpawnNextPiece();
+                }
+            }
+
+            UpdateHud();
+            RefreshViews();
+        }
+
+        private Vector2Int GetSpawnOrigin()
+        {
+            Vector2Int requested = config != null ? config.SpawnOrigin : new Vector2Int(board.Width / 2, 0);
+            
+            // If the user hasn't set up the spawn origin in the config, it usually defaults to (0,0).
+            // We want it to be at the top of our board!
+            if (requested.y <= 0)
+            {
+                requested.y = 0;
+            }
+            if (requested.x <= 0)
+            {
+                requested.x = board.Width / 2;
+            }
+
+            int clampedX = Mathf.Clamp(requested.x, 1, board.Width - 2);
+            int clampedY = Mathf.Clamp(requested.y, 0, board.Height - 1);
+            return new Vector2Int(clampedX, clampedY);
         }
 
         private void UpdateHud()
@@ -338,6 +581,7 @@ namespace GraviTrix.Core
             {
                 GamePhase.Falling => "Falling",
                 GamePhase.RotatingBoard => "Rotating",
+                GamePhase.ClearingLines => "Clearing",
                 GamePhase.GameOver => "Game Over",
                 _ => "Spawning"
             };
@@ -364,7 +608,7 @@ namespace GraviTrix.Core
         {
             if (boardView != null)
             {
-                boardView.Render(board, activePiece);
+                boardView.Render(board, activePiece, nextPiece, heldPiece, hiddenCells);
             }
         }
     }

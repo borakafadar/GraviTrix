@@ -32,7 +32,8 @@ namespace GraviTrix.Core
         Spawning = 0,
         Falling = 1,
         RotatingBoard = 2,
-        GameOver = 3
+        GameOver = 3,
+        ClearingLines = 4
     }
 
     [Serializable]

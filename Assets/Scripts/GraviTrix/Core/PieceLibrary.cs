@@ -17,7 +17,21 @@ namespace GraviTrix.Core
                 return null;
             }
 
-            return pieces[Random.Range(0, pieces.Count)];
+            List<PieceDefinition> validPieces = new List<PieceDefinition>();
+            for (int index = 0; index < pieces.Count; index++)
+            {
+                if (pieces[index] != null)
+                {
+                    validPieces.Add(pieces[index]);
+                }
+            }
+
+            if (validPieces.Count == 0)
+            {
+                return null;
+            }
+
+            return validPieces[Random.Range(0, validPieces.Count)];
         }
     }
 }

@@ -40,6 +40,11 @@ namespace GraviTrix.Runtime
             controller?.RotatePieceRight();
         }
 
+        public void OnHoldPiece()
+        {
+            controller?.HoldPiece();
+        }
+
         public void OnSoftDrop()
         {
             controller?.SoftDrop();
@@ -101,6 +106,11 @@ namespace GraviTrix.Runtime
             if (keyboard.rKey.wasPressedThisFrame)
             {
                 controller?.RestartGame();
+            }
+
+            if (keyboard.cKey.wasPressedThisFrame || keyboard.leftShiftKey.wasPressedThisFrame)
+            {
+                controller?.HoldPiece();
             }
         }
 

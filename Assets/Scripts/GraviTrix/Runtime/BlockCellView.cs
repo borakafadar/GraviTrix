@@ -35,10 +35,21 @@ namespace GraviTrix.Runtime
                 BlockKind.Lava => lavaColor,
                 BlockKind.Metal => metalColor,
                 BlockKind.Line => lineColor,
-                _ => normalColor
+                _ => cell.VisualType switch
+                {
+                    BlockVisualType.Yellow => Color.yellow,
+                    BlockVisualType.Cyan => Color.cyan,
+                    BlockVisualType.Green => Color.green,
+                    BlockVisualType.Blue => Color.blue,
+                    BlockVisualType.Orange => new Color(1f, 0.5f, 0f, 1f),
+                    BlockVisualType.Pink => new Color(1f, 0.4f, 0.7f, 1f),
+                    BlockVisualType.Red => Color.red,
+                    BlockVisualType.DeepBlue => new Color(0f, 0f, 0.5f, 1f),
+                    _ => normalColor
+                }
             };
 
-            spriteRenderer.color = tintOverride.HasValue ? tintOverride.Value : color;
+            spriteRenderer.color = tintOverride.HasValue ? color * tintOverride.Value : color;
         }
     }
 }
