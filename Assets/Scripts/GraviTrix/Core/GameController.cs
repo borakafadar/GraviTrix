@@ -130,7 +130,7 @@ namespace GraviTrix.Core
                 movesBeforeRotationTarget = 0;
                 movesUntilRotation = 0;
                 UpdateHud();
-                RefreshViews();
+                if (boardView != null) boardView.Render(board, activePiece, nextPiece, heldPiece, hiddenCells);
                 return;
             }
 
@@ -227,9 +227,8 @@ namespace GraviTrix.Core
                 
                 if (!board.CanOccupy(activePiece.GetWorldCells()))
                 {
-                    phase = GamePhase.GameOver;
-                    if (SfxManager.Instance != null) SfxManager.Instance.PlayGameOver();
-                    activePiece = null;
+                    TriggerGameOver();
+                    return;
                 }
                 else
                 {
@@ -258,19 +257,13 @@ namespace GraviTrix.Core
 
             if (activePiece == null)
             {
-                phase = GamePhase.GameOver;
-                if (SfxManager.Instance != null) SfxManager.Instance.PlayGameOver();
-                UpdateHud();
+                TriggerGameOver();
                 return;
             }
 
             if (!board.CanOccupy(activePiece.GetWorldCells()))
             {
-                phase = GamePhase.GameOver;
-                if (SfxManager.Instance != null) SfxManager.Instance.PlayGameOver();
-                activePiece = null;
-                UpdateHud();
-                RefreshViews();
+                TriggerGameOver();
                 return;
             }
 
@@ -525,7 +518,16 @@ namespace GraviTrix.Core
                 }
             }
 
-            CheckLinesAndSettleAfterDrop();
+            var slideMovements = board.SlideSlipperyBlocks();
+            if (slideMovements.Count > 0 && boardView != null)
+            {
+                RefreshViews(); // Temporarily update logical position behind the scenes
+                boardView.PlaySlipperySlideAnimation(slideMovements, CheckLinesAndSettleAfterDrop);
+            }
+            else
+            {
+                CheckLinesAndSettleAfterDrop();
+            }
         }
 
         private void CheckLinesAndSettleAfterDrop()
@@ -692,8 +694,26 @@ namespace GraviTrix.Core
             hudView.SetRotationProgress(progress, movesUntilRotation);
         }
 
+        private void TriggerGameOver()
+        {
+            if (phase == GamePhase.GameOver) return;
+
+            phase = GamePhase.GameOver;
+            if (SfxManager.Instance != null) SfxManager.Instance.PlayGameOver();
+            activePiece = null;
+            UpdateHud();
+
+            if (boardView != null)
+            {
+                boardView.Render(board, activePiece, nextPiece, heldPiece, hiddenCells);
+                boardView.PlayGameOverAnimation();
+            }
+        }
+
         private void RefreshViews()
         {
+            if (phase == GamePhase.GameOver) return;
+
             if (boardView != null)
             {
                 boardView.Render(board, activePiece, nextPiece, heldPiece, hiddenCells);

@@ -16,7 +16,8 @@ namespace GraviTrix.Core
         DeepBlue = 8,
         Metal = 9,
         Lava = 10,
-        Line = 11
+        Line = 11,
+        Slippery = 12
     }
 
     public enum BlockKind
@@ -24,7 +25,8 @@ namespace GraviTrix.Core
         Normal = 0,
         Lava = 1,
         Metal = 2,
-        Line = 3
+        Line = 3,
+        Slippery = 4
     }
 
     public enum GamePhase
@@ -101,6 +103,7 @@ namespace GraviTrix.Core
                 BlockKind.Lava => BlockVisualType.Lava,
                 BlockKind.Metal => BlockVisualType.Metal,
                 BlockKind.Line => BlockVisualType.Line,
+                BlockKind.Slippery => BlockVisualType.Slippery,
                 _ => BlockVisualType.Yellow
             };
         }

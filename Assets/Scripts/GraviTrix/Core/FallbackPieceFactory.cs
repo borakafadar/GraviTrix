@@ -122,7 +122,24 @@ namespace GraviTrix.Core
                 return null;
             }
 
-            Template selected = Templates[Random.Range(0, Templates.Length)];
+            int index = Random.Range(0, Templates.Length);
+            Template selected = Templates[index];
+
+            // 15% chance for a normal piece (indices 0-6) to become a Slippery piece
+            if (index <= 6 && Random.value < 0.15f)
+            {
+                BlockCellState[] slipperyCells = new BlockCellState[selected.Cells.Length];
+                for (int i = 0; i < selected.Cells.Length; i++)
+                {
+                    slipperyCells[i] = new BlockCellState(
+                        selected.Cells[i].LocalPosition,
+                        BlockKind.Slippery,
+                        BlockVisualType.Slippery
+                    );
+                }
+                return new PieceInstance(origin, selected.Pivot, slipperyCells);
+            }
+
             return new PieceInstance(origin, selected.Pivot, selected.Cells);
         }
 

@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: c9be475220cf03a4788102b5a35ffd45
+guid: b00a043c006f39d448f2ae0fee56d97d
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -5681519278335577284
-    second: ChatGPT_Image_18_Nis_2026_14_56_06-removebg-preview_0
+      213: 3138613253880334311
+    second: block_pink_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -51,7 +51,7 @@ TextureImporter:
   spriteMeshType: 1
   alignment: 0
   spritePivot: {x: 0.5, y: 0.5}
-  spritePixelsToUnits: 800
+  spritePixelsToUnits: 1800
   spriteBorder: {x: 0, y: 0, z: 0, w: 0}
   spriteGenerateFallbackPhysicsShape: 1
   alphaUsage: 1
@@ -97,19 +97,6 @@ TextureImporter:
     androidETC2FallbackOverride: 0
     forceMaximumCompressionQuality_BC6H_BC7: 0
   - serializedVersion: 4
-    buildTarget: Android
-    maxTextureSize: 2048
-    resizeAlgorithm: 0
-    textureFormat: -1
-    textureCompression: 1
-    compressionQuality: 50
-    crunchedCompression: 0
-    allowsAlphaSplitting: 0
-    overridden: 0
-    ignorePlatformSupport: 0
-    androidETC2FallbackOverride: 0
-    forceMaximumCompressionQuality_BC6H_BC7: 0
-  - serializedVersion: 4
     buildTarget: WebGL
     maxTextureSize: 2048
     resizeAlgorithm: 0
@@ -126,13 +113,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: ChatGPT_Image_18_Nis_2026_14_56_06-removebg-preview_0
+      name: block_pink_0
       rect:
         serializedVersion: 2
-        x: 99
-        y: 99
-        width: 303
-        height: 303
+        x: 149
+        y: 152
+        width: 726
+        height: 724
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -141,8 +128,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: c33364e71503721b0800000000000000
-      internalID: -5681519278335577284
+      spriteID: 7e7ced410289e8b20800000000000000
+      internalID: 3138613253880334311
       vertices: []
       indices: 
       edges: []
@@ -161,7 +148,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      ChatGPT_Image_18_Nis_2026_14_56_06-removebg-preview_0: -5681519278335577284
+      block_pink_0: 3138613253880334311
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

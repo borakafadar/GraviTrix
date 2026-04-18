@@ -153,6 +153,27 @@ namespace GraviTrix.Runtime
             float y = -cell.Position.y * cellSize + cachedBoardOffset.y;
             view.transform.localPosition = new Vector3(x, y, 0f);
             view.SetCell(cell, tintOverride);
+
+            if (cell.VisualType == BlockVisualType.Slippery)
+            {
+                var sr = view.GetComponent<SpriteRenderer>();
+                if (sr != null) 
+                {
+                    if (flashSprite != null) 
+                    {
+                        sr.sprite = flashSprite;
+                    }
+                    else
+                    {
+#if UNITY_EDITOR
+                        Sprite editorSprite = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/Blocks/block_removed.png");
+                        if (editorSprite != null) sr.sprite = editorSprite;
+#endif
+                    }
+                    if (tintOverride == null) sr.color = Color.white;
+                }
+            }
+
             spawnedViews.Add(view);
         }
 
@@ -839,6 +860,223 @@ namespace GraviTrix.Runtime
             }
 
             onComplete?.Invoke();
+        }
+
+        public void PlaySlipperySlideAnimation(List<BoardGrid.SlideInfo> slideMovements, Action onComplete)
+        {
+            StartCoroutine(SlipperySlideCoroutine(slideMovements, onComplete));
+        }
+
+        private IEnumerator SlipperySlideCoroutine(List<BoardGrid.SlideInfo> slideMovements, Action onComplete)
+        {
+            float duration = 0.35f;
+            float elapsed = 0f;
+
+            List<BlockCellView> slidingViews = new List<BlockCellView>();
+            List<Vector3> startLocalPos = new List<Vector3>();
+            List<Vector3> endLocalPos = new List<Vector3>();
+
+            foreach (var movement in slideMovements)
+            {
+                float toX = movement.To.x * cellSize + cachedBoardOffset.x;
+                float toY = -movement.To.y * cellSize + cachedBoardOffset.y;
+                Vector3 targetPos = new Vector3(toX, toY, 0f);
+
+                float fromX = movement.From.x * cellSize + cachedBoardOffset.x;
+                float fromY = -movement.From.y * cellSize + cachedBoardOffset.y;
+                Vector3 startPos = new Vector3(fromX, fromY, 0f);
+
+                BlockCellView matchedView = null;
+                foreach (var view in spawnedViews)
+                {
+                    if (view != null && Vector3.Distance(view.transform.localPosition, targetPos) < 0.01f)
+                    {
+                        matchedView = view;
+                        break;
+                    }
+                }
+
+                if (matchedView != null)
+                {
+                    slidingViews.Add(matchedView);
+                    startLocalPos.Add(startPos);
+                    endLocalPos.Add(targetPos);
+                    
+                    matchedView.transform.localPosition = startPos;
+                }
+            }
+
+            while (elapsed < duration)
+            {
+                elapsed += Time.deltaTime;
+                float t = Mathf.Clamp01(elapsed / duration);
+                float easedT = EaseOutBounce(t);
+                
+                for (int i = 0; i < slidingViews.Count; i++)
+                {
+                    if (slidingViews[i] != null)
+                    {
+                        slidingViews[i].transform.localPosition = Vector3.LerpUnclamped(startLocalPos[i], endLocalPos[i], easedT);
+                    }
+                }
+
+                yield return null;
+            }
+
+            for (int i = 0; i < slidingViews.Count; i++)
+            {
+                if (slidingViews[i] != null)
+                {
+                    slidingViews[i].transform.localPosition = endLocalPos[i];
+                }
+            }
+
+            onComplete?.Invoke();
+        }
+
+        public void PlayGameOverAnimation()
+        {
+            StartCoroutine(GameOverAnimationCoroutine());
+        }
+
+        private IEnumerator GameOverAnimationCoroutine()
+        {
+            List<BlockCellView> blocksToAnimate = new List<BlockCellView>();
+            Transform targetRoot = boardRoot != null ? boardRoot : transform;
+            
+            // Collect all blocks on the board
+            foreach (var view in spawnedViews)
+            {
+                if (view != null && view.transform.parent == targetRoot)
+                {
+                    if (view.gameObject.name == "PreviewBackground") continue;
+                    if (view.GetComponent<TextMesh>() != null) continue;
+                    
+                    var sr = view.GetComponent<SpriteRenderer>();
+                    if (sr != null)
+                    {
+                        blocksToAnimate.Add(view);
+                    }
+                }
+            }
+
+            if (blocksToAnimate.Count == 0) yield break;
+
+            // Flash red phase
+            float flashDuration = 1.2f;
+            float elapsed = 0f;
+            List<SpriteRenderer> srs = new List<SpriteRenderer>();
+            List<Color> origColors = new List<Color>();
+            
+            foreach (var view in blocksToAnimate)
+            {
+                var sr = view.GetComponent<SpriteRenderer>();
+                srs.Add(sr);
+                origColors.Add(sr.color);
+            }
+
+            while (elapsed < flashDuration)
+            {
+                elapsed += Time.deltaTime;
+                float t = elapsed / flashDuration;
+                
+                // Pulsing red effect
+                float flash = (Mathf.Sin(t * Mathf.PI * 6f) + 1f) * 0.5f; 
+                
+                for (int i = 0; i < srs.Count; i++)
+                {
+                    if (srs[i] != null)
+                    {
+                        srs[i].color = Color.Lerp(origColors[i], new Color(1f, 0.2f, 0.2f, 1f), flash);
+                    }
+                }
+                yield return null;
+            }
+            
+            // Restore colors briefly before falling
+            for (int i = 0; i < srs.Count; i++)
+            {
+                if (srs[i] != null) srs[i].color = origColors[i];
+            }
+            
+            yield return new WaitForSeconds(0.1f);
+
+            // Shuffle blocks for random falling order
+            for (int i = 0; i < blocksToAnimate.Count; i++)
+            {
+                BlockCellView temp = blocksToAnimate[i];
+                int randomIndex = UnityEngine.Random.Range(i, blocksToAnimate.Count);
+                blocksToAnimate[i] = blocksToAnimate[randomIndex];
+                blocksToAnimate[randomIndex] = temp;
+            }
+
+            float gravity = -20f * cellSize;
+            int groupSize = Mathf.Max(3, blocksToAnimate.Count / 15); // Fall in groups
+            int currentIdx = 0;
+            
+            List<BlockCellView> fallingBlocks = new List<BlockCellView>();
+            List<Vector3> velocities = new List<Vector3>();
+            List<float> rotationalVels = new List<float>();
+
+            float spawnTimer = 0f;
+            float spawnInterval = 0.05f;
+
+            while (currentIdx < blocksToAnimate.Count || fallingBlocks.Count > 0)
+            {
+                spawnTimer -= Time.deltaTime;
+                
+                // Add new group of blocks to fall
+                if (spawnTimer <= 0f && currentIdx < blocksToAnimate.Count)
+                {
+                    spawnTimer = spawnInterval;
+                    for (int i = 0; i < groupSize && currentIdx < blocksToAnimate.Count; i++)
+                    {
+                        BlockCellView view = blocksToAnimate[currentIdx++];
+                        if (view != null)
+                        {
+                            fallingBlocks.Add(view);
+                            velocities.Add(new Vector3(
+                                UnityEngine.Random.Range(-3f, 3f) * cellSize, 
+                                UnityEngine.Random.Range(2f, 6f) * cellSize, 
+                                0f));
+                            rotationalVels.Add(UnityEngine.Random.Range(-400f, 400f));
+                            
+                            var sr = view.GetComponent<SpriteRenderer>();
+                            if (sr != null) sr.sortingOrder += 20;
+                        }
+                    }
+                }
+
+                // Update falling blocks
+                for (int i = fallingBlocks.Count - 1; i >= 0; i--)
+                {
+                    BlockCellView b = fallingBlocks[i];
+                    if (b == null)
+                    {
+                        fallingBlocks.RemoveAt(i);
+                        velocities.RemoveAt(i);
+                        rotationalVels.RemoveAt(i);
+                        continue;
+                    }
+
+                    Vector3 vel = velocities[i];
+                    vel.y += gravity * Time.deltaTime;
+                    velocities[i] = vel;
+
+                    b.transform.localPosition += vel * Time.deltaTime;
+                    b.transform.localRotation *= Quaternion.Euler(0, 0, rotationalVels[i] * Time.deltaTime);
+
+                    if (b.transform.localPosition.y < cachedBoardOffset.y - (30f * cellSize))
+                    {
+                        Destroy(b.gameObject);
+                        fallingBlocks.RemoveAt(i);
+                        velocities.RemoveAt(i);
+                        rotationalVels.RemoveAt(i);
+                    }
+                }
+
+                yield return null;
+            }
         }
 
         private float EaseOutBack(float x)

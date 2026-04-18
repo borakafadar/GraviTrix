@@ -421,5 +421,42 @@ namespace GraviTrix.Core
                 }
             }
         }
+        public struct SlideInfo
+        {
+            public Vector2Int From;
+            public Vector2Int To;
+        }
+
+        public List<SlideInfo> SlideSlipperyBlocks()
+        {
+            List<SlideInfo> movements = new List<SlideInfo>();
+
+            for (int y = height - 2; y >= 0; y--)
+            {
+                for (int x = 0; x < width; x++)
+                {
+                    if (occupied[x, y] && occupants[x, y].Kind == BlockKind.Slippery)
+                    {
+                        int targetY = y;
+                        while (targetY + 1 < height && !occupied[x, targetY + 1])
+                        {
+                            targetY++;
+                        }
+
+                        if (targetY != y)
+                        {
+                            occupied[x, targetY] = true;
+                            occupants[x, targetY] = occupants[x, y];
+                            
+                            occupied[x, y] = false;
+                            occupants[x, y] = default;
+
+                            movements.Add(new SlideInfo { From = new Vector2Int(x, y), To = new Vector2Int(x, targetY) });
+                        }
+                    }
+                }
+            }
+            return movements;
+        }
     }
 }
