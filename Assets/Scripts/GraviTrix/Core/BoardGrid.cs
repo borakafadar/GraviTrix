@@ -21,6 +21,8 @@ namespace GraviTrix.Core
         public int Width => width;
         public int Height => height;
 
+        public List<BlockCellInfo> LastExtinguished = new List<BlockCellInfo>();
+
         public void Clear()
         {
             for (int x = 0; x < width; x++)
@@ -68,6 +70,8 @@ namespace GraviTrix.Core
                 occupied[cell.Position.x, cell.Position.y] = true;
                 occupants[cell.Position.x, cell.Position.y] = new CellOccupant(cell.Kind, cell.VisualType);
             }
+
+            ExtinguishLavaAtBottom();
 
             return true;
         }
@@ -234,6 +238,8 @@ namespace GraviTrix.Core
                 ClearRow(y);
             }
 
+            ExtinguishLavaAtBottom();
+
             return rowsToRemove.Count;
         }
 
@@ -280,7 +286,8 @@ namespace GraviTrix.Core
                     occupants[finalPosition.x, finalPosition.y] = new CellOccupant(cell.Kind, cell.VisualType);
                 }
             }
-
+            
+            ExtinguishLavaAtBottom();
             return dropAmount;
         }
 
@@ -333,6 +340,7 @@ namespace GraviTrix.Core
                 }
             }
 
+            ExtinguishLavaAtBottom();
             return dropAmount;
         }
 
@@ -356,6 +364,61 @@ namespace GraviTrix.Core
             {
                 occupied[x, row] = false;
                 occupants[x, row] = default;
+            }
+        }
+
+        private void ExtinguishLavaAtBottom()
+        {
+            LastExtinguished.Clear();
+            int bottomY = height - 1;
+            List<Vector2Int> lavaToExtinguish = new List<Vector2Int>();
+            
+            for (int x = 0; x < width; x++)
+            {
+                if (occupied[x, bottomY] && occupants[x, bottomY].Kind == BlockKind.Lava)
+                {
+                    lavaToExtinguish.Add(new Vector2Int(x, bottomY));
+                }
+            }
+
+            if (lavaToExtinguish.Count > 0)
+            {
+                HashSet<Vector2Int> visited = new HashSet<Vector2Int>();
+                Queue<Vector2Int> queue = new Queue<Vector2Int>();
+                
+                foreach (var startNode in lavaToExtinguish)
+                {
+                    if (visited.Add(startNode))
+                    {
+                        queue.Enqueue(startNode);
+                    }
+                }
+
+                Vector2Int[] dirs = { Vector2Int.up, Vector2Int.down, Vector2Int.left, Vector2Int.right };
+
+                while (queue.Count > 0)
+                {
+                    Vector2Int current = queue.Dequeue();
+                    LastExtinguished.Add(new BlockCellInfo
+                    {
+                        Position = current,
+                        Kind = occupants[current.x, current.y].Kind,
+                        VisualType = occupants[current.x, current.y].VisualType
+                    });
+                    occupants[current.x, current.y] = new CellOccupant(BlockKind.Metal, BlockVisualType.Metal);
+                    
+                    foreach (var dir in dirs)
+                    {
+                        Vector2Int neighbor = current + dir;
+                        if (IsInside(neighbor) && occupied[neighbor.x, neighbor.y] && occupants[neighbor.x, neighbor.y].Kind == BlockKind.Lava)
+                        {
+                            if (visited.Add(neighbor))
+                            {
+                                queue.Enqueue(neighbor);
+                            }
+                        }
+                    }
+                }
             }
         }
     }

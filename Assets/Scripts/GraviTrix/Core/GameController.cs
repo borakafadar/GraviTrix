@@ -321,6 +321,7 @@ namespace GraviTrix.Core
         private void TryBurnCellsUnderLava()
         {
             List<Vector2Int> cellsToClear = new List<Vector2Int>();
+            List<BlockCellInfo> cellsToAnimate = new List<BlockCellInfo>();
 
             foreach (BlockCellInfo cell in activePiece.GetWorldCells())
             {
@@ -338,10 +339,20 @@ namespace GraviTrix.Core
 
             if (cellsToClear.Count > 0)
             {
+                // Capture the cell info before clearing them
+                cellsToAnimate = board.GetCells(cellsToClear);
+                
                 board.ClearCells(cellsToClear);
                 score += cellsToClear.Count * (config != null ? config.LavaMeltScore : pointsPerBlock);
+                
+                if (boardView != null)
+                {
+                    boardView.PlayMeltAnimation(cellsToAnimate, 0.5f);
+                }
             }
         }
+
+        private List<BlockCellInfo> lastPlacedPieceCells = new List<BlockCellInfo>();
 
         private void LockActivePiece()
         {
@@ -350,12 +361,32 @@ namespace GraviTrix.Core
                 return;
             }
 
-            board.TryPlace(activePiece.GetWorldCells());
+            var cells = activePiece.GetWorldCells();
+            lastPlacedPieceCells.Clear();
+            foreach(var c in cells) lastPlacedPieceCells.Add(c);
 
+            board.TryPlace(lastPlacedPieceCells);
+            activePiece = null;
+
+            if (board.LastExtinguished.Count > 0)
+            {
+                pendingIsRotation = false;
+
+                if (boardView != null)
+                {
+                    boardView.PlayExtinguishAnimation(board.LastExtinguished, 0.6f);
+                }
+            }
+
+            CheckLinesAndSettle();
+        }
+
+        private void CheckLinesAndSettle()
+        {
             List<int> lineRowsToClear = new List<int>();
             HashSet<int> seenRows = new HashSet<int>();
 
-            foreach (BlockCellInfo cell in activePiece.GetWorldCells())
+            foreach (BlockCellInfo cell in lastPlacedPieceCells)
             {
                 if (cell.Kind == BlockKind.Line && seenRows.Add(cell.Position.y))
                 {
@@ -434,9 +465,10 @@ namespace GraviTrix.Core
                 isBoardRotated = false;
             }
 
+            RefreshViews();
+
             if (dropAmount > 0 && boardView != null)
             {
-                RefreshViews();
                 boardView.PlayBoardDropAnimation(dropAmount, OnBoardDropComplete);
             }
             else
@@ -446,6 +478,22 @@ namespace GraviTrix.Core
         }
 
         private void OnBoardDropComplete()
+        {
+            if (board.LastExtinguished.Count > 0)
+            {
+                pendingIsRotation = true; 
+                lastPlacedPieceCells.Clear();
+                
+                if (boardView != null)
+                {
+                    boardView.PlayExtinguishAnimation(board.LastExtinguished, 0.6f);
+                }
+            }
+
+            CheckLinesAndSettleAfterDrop();
+        }
+
+        private void CheckLinesAndSettleAfterDrop()
         {
             List<int> fullRows = board.GetFullRows();
             if (fullRows.Count > 0)
