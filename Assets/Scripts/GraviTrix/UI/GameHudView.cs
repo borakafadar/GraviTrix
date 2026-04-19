@@ -21,19 +21,21 @@ namespace GraviTrix.UI
         private void Awake()
         {
             // Auto-configure Canvas Scaler for responsive UI
-            Canvas canvas = GetComponentInParent<Canvas>();
-            if (canvas != null)
+            Canvas localCanvas = GetComponent<Canvas>();
+            if (localCanvas == null) localCanvas = GetComponentInChildren<Canvas>();
+            if (localCanvas == null) localCanvas = GetComponentInParent<Canvas>();
+
+            if (localCanvas != null)
             {
-                Canvas rootCanvas = canvas.rootCanvas;
-                CanvasScaler scaler = rootCanvas.GetComponent<CanvasScaler>();
+                CanvasScaler scaler = localCanvas.GetComponent<CanvasScaler>();
                 if (scaler == null)
                 {
-                    scaler = rootCanvas.gameObject.AddComponent<CanvasScaler>();
+                    scaler = localCanvas.gameObject.AddComponent<CanvasScaler>();
                 }
                 scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
                 scaler.referenceResolution = new Vector2(1080, 1920);
                 scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
-                scaler.matchWidthOrHeight = 0.8f;
+                scaler.matchWidthOrHeight = 0.5f;
             }
 
             if (scoreText != null)
