@@ -57,7 +57,7 @@ public class SfxManager : MonoBehaviour
         lavaMeltClip = Resources.Load<AudioClip>("SoundEffects/lava_melt_sound");
         lineClearClip = Resources.Load<AudioClip>("SoundEffects/line_clear_sound");
         gameOverClip = Resources.Load<AudioClip>("SoundEffects/game_over");
-        bombExplosionClip = Resources.Load<AudioClip>("SoundEffects/bomb_sound");
+        bombExplosionClip = Resources.Load<AudioClip>("SoundEffects/explosion_sound");
     }
 
     // ==================== Public play methods ====================
