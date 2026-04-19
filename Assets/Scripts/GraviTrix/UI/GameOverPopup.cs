@@ -103,6 +103,23 @@ namespace GraviTrix.UI
             overlayRect.offsetMin = Vector2.zero;
             overlayRect.offsetMax = Vector2.zero;
 
+            // ─── Navy Blue Rounded Border Frame ───
+            GameObject borderObj = new GameObject("Blue Border");
+            borderObj.transform.SetParent(canvasObj.transform, false);
+
+            Image borderImage = borderObj.AddComponent<Image>();
+            borderImage.sprite = CreateRoundedPanelSprite(740, 870, 46);
+            borderImage.type = Image.Type.Simple;
+            borderImage.color = new Color32(20, 40, 120, 255);
+            borderImage.raycastTarget = false;
+
+            RectTransform borderRect = borderObj.GetComponent<RectTransform>();
+            borderRect.anchorMin = new Vector2(0.5f, 0.5f);
+            borderRect.anchorMax = new Vector2(0.5f, 0.5f);
+            borderRect.pivot = new Vector2(0.5f, 0.5f);
+            borderRect.anchoredPosition = Vector2.zero;
+            borderRect.sizeDelta = new Vector2(740f, 870f);
+
             // ─── Panel ───
             GameObject panelObj = new GameObject("Panel");
             panelObj.transform.SetParent(canvasObj.transform, false);
@@ -373,9 +390,9 @@ namespace GraviTrix.UI
             Texture2D texture = new Texture2D(width, height);
             texture.filterMode = FilterMode.Bilinear;
 
-            Color centerColor = new Color32(55, 35, 95, 250);
-            Color edgeColor = new Color32(35, 20, 65, 250);
-            Color borderColor = new Color32(90, 60, 150, 255);
+            Color centerColor = new Color32(30, 50, 110, 250);
+            Color edgeColor = new Color32(18, 30, 75, 250);
+            Color borderColor = new Color32(50, 90, 180, 255);
 
             Vector2 center = new Vector2(width / 2f, height / 2f);
 

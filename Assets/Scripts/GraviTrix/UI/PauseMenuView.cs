@@ -106,6 +106,19 @@ namespace GraviTrix.UI
             ovImg.color = new Color(0f, 0f, 0f, 0.6f); ovImg.raycastTarget = true;
             Stretch(ov);
 
+            // Navy Blue Rounded Border Frame
+            GameObject border = MakeRect("Blue Border", canvasObj.transform);
+            Image brdImg = border.AddComponent<Image>();
+            brdImg.sprite = CreateRoundedPanelSprite(740, 870, 46);
+            brdImg.type = Image.Type.Simple;
+            brdImg.color = new Color32(20, 40, 120, 255);
+            brdImg.raycastTarget = false;
+            RectTransform brt = border.GetComponent<RectTransform>();
+            brt.anchorMin = brt.anchorMax = new Vector2(0.5f, 0.5f);
+            brt.pivot = new Vector2(0.5f, 0.5f);
+            brt.anchoredPosition = Vector2.zero;
+            brt.sizeDelta = new Vector2(740f, 870f);
+
             // Panel
             GameObject panel = MakeRect("Panel", canvasObj.transform);
             Image pImg = panel.AddComponent<Image>();
@@ -371,7 +384,7 @@ namespace GraviTrix.UI
         private Sprite CreateRoundedPanelSprite(int w, int h, int r)
         {
             Texture2D tex = new Texture2D(w, h); tex.filterMode = FilterMode.Bilinear;
-            Color cen = new Color32(55, 35, 95, 250), edg = new Color32(35, 20, 65, 250), brd = new Color32(90, 60, 150, 255);
+            Color cen = new Color32(30, 50, 110, 250), edg = new Color32(18, 30, 75, 250), brd = new Color32(50, 90, 180, 255);
             Vector2 center = new Vector2(w / 2f, h / 2f);
             for (int y = 0; y < h; y++)
             for (int x = 0; x < w; x++)

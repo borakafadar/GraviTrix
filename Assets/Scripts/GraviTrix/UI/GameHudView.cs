@@ -61,7 +61,7 @@ namespace GraviTrix.UI
             {
                 RectTransform rt = rotationProgressBar.transform as RectTransform;
                 // Progress bar sits between the arrow and the grid
-                SetupUIElement(rt, new Vector2(0f, -420f), new Vector2(480f, 26f), new Vector2(0.5f, 1f));
+                SetupUIElement(rt, new Vector2(0f, -435f), new Vector2(480f, 26f), new Vector2(0.5f, 1f));
                 rt.localRotation = Quaternion.identity;
 
                 if (rotationProgressBar.fillRect != null)

@@ -132,7 +132,8 @@ namespace GraviTrix.UI
                 UnityEngine.UI.Text txt = textObj.GetComponent<UnityEngine.UI.Text>();
                 txt.text = text;
                 txt.alignment = TextAnchor.MiddleCenter;
-                txt.color = Color.white;
+                // Match the HOLD/NEXT label golden gradient color from BoardView
+                txt.color = (text == "Hold") ? new Color(1f, 0.8f, 0.2f) : Color.white;
                 txt.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
                 txt.fontSize = 45;
                 txt.fontStyle = FontStyle.Bold;
