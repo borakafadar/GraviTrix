@@ -717,18 +717,18 @@ namespace GraviTrix.Core
 
             if (phase == GamePhase.RotatingBoard)
             {
-                hudView.SetRotationProgress(1f, 0, !isBoardRotated);
+                hudView.SetRotationProgress(1f, 0, !isBoardRotated, movesBeforeRotationTarget);
                 return;
             }
 
             if (movesBeforeRotationTarget <= 0)
             {
-                hudView.SetRotationProgress(0f, movesUntilRotation, !isBoardRotated);
+                hudView.SetRotationProgress(0f, movesUntilRotation, !isBoardRotated, movesBeforeRotationTarget);
                 return;
             }
 
             float progress = 1f - Mathf.Clamp01((float)movesUntilRotation / movesBeforeRotationTarget);
-            hudView.SetRotationProgress(progress, movesUntilRotation, !isBoardRotated);
+            hudView.SetRotationProgress(progress, movesUntilRotation, !isBoardRotated, movesBeforeRotationTarget);
         }
 
         private void TriggerGameOver()

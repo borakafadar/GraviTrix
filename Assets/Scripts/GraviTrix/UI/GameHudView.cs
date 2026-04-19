@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -11,7 +12,9 @@ namespace GraviTrix.UI
         [SerializeField] private TextMeshProUGUI scoreText;
         [SerializeField] private TextMeshProUGUI stateText;
 
-        private TextMeshProUGUI rotationArrowText;
+        private Image rotationArrowImage;
+        private List<GameObject> tickMarks = new List<GameObject>();
+        private int lastTotalMoves = -1;
 
         private void Awake()
         {
@@ -33,37 +36,28 @@ namespace GraviTrix.UI
             
             if (rotationText != null)
             {
-                RectTransform rt = rotationText.transform as RectTransform;
-                SetupUIElement(rt, new Vector2(0f, -220f), new Vector2(600f, 50f), new Vector2(0.5f, 1f));
-                rotationText.fontSize = 24;
-                rotationText.fontStyle = FontStyles.Bold;
-                rotationText.enableVertexGradient = true;
-                rotationText.colorGradient = new VertexGradient(Color.white, Color.white, new Color(1f, 0.4f, 0.8f), new Color(0.8f, 0.2f, 0.6f));
-                rotationText.alignment = TextAlignmentOptions.Center;
+                rotationText.gameObject.SetActive(false); // Hide rotation text, arrow is enough
             }
             
             if (rotationProgressBar != null)
             {
                 RectTransform rt = rotationProgressBar.transform as RectTransform;
-                // Make it horizontal and roughly grid width (e.g. 480f)
-                SetupUIElement(rt, new Vector2(0f, -280f), new Vector2(480f, 30f), new Vector2(0.5f, 1f));
-                rt.localRotation = Quaternion.identity; // Reset rotation
+                // Progress bar sits between the arrow and the grid
+                SetupUIElement(rt, new Vector2(0f, -340f), new Vector2(480f, 26f), new Vector2(0.5f, 1f));
+                rt.localRotation = Quaternion.identity;
 
                 if (rotationProgressBar.fillRect != null)
                 {
                     Image fillImage = rotationProgressBar.fillRect.GetComponent<Image>();
                     if (fillImage != null)
                     {
-                        // Generate a static gradient texture (Blue to Pink)
-                        Texture2D gradTex = new Texture2D(2, 1);
-                        gradTex.wrapMode = TextureWrapMode.Clamp;
-                        gradTex.SetPixel(0, 0, new Color(0.2f, 0.6f, 1f)); // Light Blue
-                        gradTex.SetPixel(1, 0, new Color(1f, 0.4f, 0.8f)); // Pink
-                        gradTex.Apply();
-                        
-                        Sprite gradSprite = Sprite.Create(gradTex, new Rect(0, 0, 2, 1), new Vector2(0.5f, 0.5f));
-                        fillImage.sprite = gradSprite;
-                        fillImage.color = Color.white;
+                        // Use a solid white texture so we can color it dynamically
+                        Texture2D whiteTex = new Texture2D(1, 1);
+                        whiteTex.SetPixel(0, 0, Color.white);
+                        whiteTex.Apply();
+                        Sprite whiteSprite = Sprite.Create(whiteTex, new Rect(0, 0, 1, 1), new Vector2(0.5f, 0.5f));
+                        fillImage.sprite = whiteSprite;
+                        fillImage.color = new Color(0.2f, 0.85f, 0.3f); // Initial green
                         fillImage.type = Image.Type.Simple;
                     }
                 }
@@ -85,11 +79,27 @@ namespace GraviTrix.UI
             }
         }
 
-        public void SetRotationProgress(float normalizedProgress, int movesRemaining, bool rotateLeft = true)
+        public void SetRotationProgress(float normalizedProgress, int movesRemaining, bool rotateLeft = true, int totalMoves = 0)
         {
             if (rotationProgressBar != null)
             {
                 rotationProgressBar.value = Mathf.Clamp01(normalizedProgress);
+                
+                if (rotationProgressBar.fillRect != null)
+                {
+                    Image fillImage = rotationProgressBar.fillRect.GetComponent<Image>();
+                    if (fillImage != null)
+                    {
+                        Color green = new Color(0.2f, 0.85f, 0.3f);
+                        Color yellow = new Color(1f, 0.9f, 0.2f);
+                        Color red = new Color(1f, 0.2f, 0.15f);
+                        
+                        float t = Mathf.Clamp01(normalizedProgress);
+                        fillImage.color = t < 0.5f 
+                            ? Color.Lerp(green, yellow, t * 2f) 
+                            : Color.Lerp(yellow, red, (t - 0.5f) * 2f);
+                    }
+                }
             }
 
             if (rotationText != null)
@@ -97,9 +107,19 @@ namespace GraviTrix.UI
                 rotationText.text = movesRemaining > 0 ? $"ROTATION IN {movesRemaining}" : "ROTATING...";
             }
 
-            if (rotationArrowText != null)
+            if (rotationArrowImage != null)
             {
-                rotationArrowText.text = rotateLeft ? "< < <" : "> > >";
+                // Flip horizontally for left rotation (sprite is drawn pointing right)
+                Vector3 scale = rotationArrowImage.rectTransform.localScale;
+                scale.x = rotateLeft ? -1f : 1f;
+                rotationArrowImage.rectTransform.localScale = scale;
+            }
+
+            // Update tick marks on the progress bar
+            if (totalMoves > 0 && totalMoves != lastTotalMoves)
+            {
+                RebuildTickMarks(totalMoves);
+                lastTotalMoves = totalMoves;
             }
         }
 
@@ -116,29 +136,77 @@ namespace GraviTrix.UI
             // State text is disabled, do nothing
         }
 
+        [SerializeField] private Sprite rotationArrowSprite;
+
         private void CreateRotationArrow(RectTransform progressBarRt)
         {
+            Sprite arrowSprite = rotationArrowSprite;
+
+            // Editor fallback: load from asset path if not assigned
+            if (arrowSprite == null)
+            {
+#if UNITY_EDITOR
+                arrowSprite = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/Buttons/rotationArrow.png");
+#endif
+            }
+
+            if (arrowSprite == null) return;
+
             GameObject arrowObj = new GameObject("Rotation Arrow");
             arrowObj.transform.SetParent(progressBarRt.parent, false);
 
-            rotationArrowText = arrowObj.AddComponent<TextMeshProUGUI>();
-            rotationArrowText.text = "< < <"; // default left
-            rotationArrowText.fontSize = 36;
-            rotationArrowText.fontStyle = FontStyles.Bold;
-            rotationArrowText.alignment = TextAlignmentOptions.Center;
-            rotationArrowText.color = new Color(1f, 0.85f, 0.3f); // Golden yellow
-            rotationArrowText.enableVertexGradient = true;
-            rotationArrowText.colorGradient = new VertexGradient(
-                new Color(1f, 0.9f, 0.4f), new Color(1f, 0.9f, 0.4f),
-                new Color(1f, 0.6f, 0.2f), new Color(1f, 0.6f, 0.2f));
+            rotationArrowImage = arrowObj.AddComponent<Image>();
+            rotationArrowImage.sprite = arrowSprite;
+            rotationArrowImage.type = Image.Type.Simple;
+            rotationArrowImage.raycastTarget = false;
+            rotationArrowImage.preserveAspect = true;
 
             RectTransform arrowRt = arrowObj.GetComponent<RectTransform>();
             arrowRt.anchorMin = new Vector2(0.5f, 1f);
             arrowRt.anchorMax = new Vector2(0.5f, 1f);
-            arrowRt.pivot = new Vector2(0.5f, 1f);
-            // Between score (y=-30, h=160) and progress bar (y=-280)
-            arrowRt.anchoredPosition = new Vector2(0f, -190f);
-            arrowRt.sizeDelta = new Vector2(300f, 50f);
+            arrowRt.pivot = new Vector2(0.5f, 0.5f);
+            // Between score bottom (~-190) and progress bar (-340)
+            arrowRt.anchoredPosition = new Vector2(0f, -260f);
+            arrowRt.sizeDelta = new Vector2(120f, 120f);
+        }
+
+        // ─── Progress Bar Tick Marks ───
+
+        private void RebuildTickMarks(int totalMoves)
+        {
+            // Clear old tick marks
+            foreach (var tick in tickMarks)
+            {
+                if (tick != null) Destroy(tick);
+            }
+            tickMarks.Clear();
+
+            if (rotationProgressBar == null || totalMoves <= 1) return;
+
+            RectTransform barRt = rotationProgressBar.transform as RectTransform;
+            float barWidth = barRt.sizeDelta.x;
+            float barHeight = barRt.sizeDelta.y;
+
+            // Create a tick for each step (skip first at 0 and last at end)
+            for (int i = 1; i < totalMoves; i++)
+            {
+                float t = (float)i / totalMoves;
+
+                GameObject tickObj = new GameObject($"Tick {i}");
+                tickObj.transform.SetParent(barRt, false);
+
+                Image tickImage = tickObj.AddComponent<Image>();
+                tickImage.color = new Color(0.3f, 0.3f, 0.3f, 0.8f);
+                tickImage.raycastTarget = false;
+
+                RectTransform tickRt = tickObj.GetComponent<RectTransform>();
+                tickRt.anchorMin = new Vector2(t, 0f);
+                tickRt.anchorMax = new Vector2(t, 1f);
+                tickRt.pivot = new Vector2(0.5f, 0.5f);
+                tickRt.sizeDelta = new Vector2(4f, barHeight * 0.5f);
+
+                tickMarks.Add(tickObj);
+            }
         }
     }
 }

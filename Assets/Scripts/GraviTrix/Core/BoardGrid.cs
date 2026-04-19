@@ -405,7 +405,7 @@ namespace GraviTrix.Core
                         Kind = occupants[current.x, current.y].Kind,
                         VisualType = occupants[current.x, current.y].VisualType
                     });
-                    occupants[current.x, current.y] = new CellOccupant(BlockKind.Metal, BlockVisualType.Metal);
+                    occupants[current.x, current.y] = new CellOccupant(BlockKind.Normal, BlockVisualType.Obsidian);
                     
                     foreach (var dir in dirs)
                     {

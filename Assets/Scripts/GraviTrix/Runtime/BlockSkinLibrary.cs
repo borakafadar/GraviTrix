@@ -17,6 +17,7 @@ namespace GraviTrix.Runtime
         [SerializeField] private Sprite metal;
         [SerializeField] private Sprite lava;
         [SerializeField] private Sprite line;
+        [SerializeField] private Sprite obsidian;
 
         public Sprite GetSprite(BlockVisualType visualType)
         {
@@ -33,6 +34,7 @@ namespace GraviTrix.Runtime
                 BlockVisualType.Metal => metal,
                 BlockVisualType.Lava => lava,
                 BlockVisualType.Line => line,
+                BlockVisualType.Obsidian => obsidian,
                 _ => yellow
             };
         }

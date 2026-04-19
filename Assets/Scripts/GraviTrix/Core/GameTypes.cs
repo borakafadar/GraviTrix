@@ -17,7 +17,8 @@ namespace GraviTrix.Core
         Metal = 9,
         Lava = 10,
         Line = 11,
-        Slippery = 12
+        Slippery = 12,
+        Obsidian = 13
     }
 
     public enum BlockKind
