@@ -179,6 +179,8 @@ public class MainMenuBuilder : MonoBehaviour
         psObj.transform.localPosition = new Vector3(0, 0, 5f);
 
         ParticleSystem ps = psObj.AddComponent<ParticleSystem>();
+        ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+
         ParticleSystemRenderer psr = ps.GetComponent<ParticleSystemRenderer>();
 
         psr.material = new Material(Shader.Find("Sprites/Default"));
@@ -203,7 +205,9 @@ public class MainMenuBuilder : MonoBehaviour
 
         var velOverLifetime = ps.velocityOverLifetime;
         velOverLifetime.enabled = true;
-        velOverLifetime.y = new ParticleSystem.MinMaxCurve(0.5f, 2.0f);
+        velOverLifetime.x = new ParticleSystem.MinMaxCurve(0f);
+        velOverLifetime.y = new ParticleSystem.MinMaxCurve(1.25f);
+        velOverLifetime.z = new ParticleSystem.MinMaxCurve(0f);
 
         var colorOverLifetime = ps.colorOverLifetime;
         colorOverLifetime.enabled = true;
@@ -213,6 +217,8 @@ public class MainMenuBuilder : MonoBehaviour
             new GradientAlphaKey[] { new GradientAlphaKey(0f, 0f), new GradientAlphaKey(1f, 0.3f), new GradientAlphaKey(0f, 1f) }
         );
         colorOverLifetime.color = grad;
+
+        ps.Play();
     }
 
     private void CreateTitle()

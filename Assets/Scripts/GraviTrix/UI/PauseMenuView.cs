@@ -1,6 +1,7 @@
 using System.Collections;
 using GraviTrix.Core;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
@@ -29,6 +30,15 @@ namespace GraviTrix.UI
         private float sfxVolume;
 
         private void Start() { BuildPauseButton(); }
+
+        private void Update()
+        {
+            Keyboard keyboard = Keyboard.current;
+            if (keyboard != null && keyboard.escapeKey.wasPressedThisFrame)
+            {
+                TogglePause();
+            }
+        }
 
         private void BuildPauseButton()
         {

@@ -88,7 +88,7 @@ namespace GraviTrix.Runtime
                 controller?.RotatePieceRight();
             }
 
-            if (keyboard.wKey.wasPressedThisFrame || keyboard.upArrowKey.wasPressedThisFrame || keyboard.spaceKey.wasPressedThisFrame)
+            if (keyboard.wKey.wasPressedThisFrame || keyboard.upArrowKey.wasPressedThisFrame)
             {
                 controller?.RotatePieceLeft();
             }
@@ -108,7 +108,7 @@ namespace GraviTrix.Runtime
                 controller?.RestartGame();
             }
 
-            if (keyboard.cKey.wasPressedThisFrame || keyboard.leftShiftKey.wasPressedThisFrame)
+            if (keyboard.cKey.wasPressedThisFrame || keyboard.leftShiftKey.wasPressedThisFrame || keyboard.spaceKey.wasPressedThisFrame)
             {
                 controller?.HoldPiece();
             }
