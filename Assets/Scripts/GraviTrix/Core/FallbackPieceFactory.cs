@@ -115,18 +115,28 @@ namespace GraviTrix.Core
                 })
         };
 
-        public static PieceInstance CreateRandom(Vector2Int origin)
+        public static PieceInstance CreateRandom(Vector2Int origin, bool forceNormal = false)
         {
             if (Templates.Length == 0)
             {
                 return null;
             }
 
-            int index = Random.Range(0, Templates.Length);
+            int index;
+            if (forceNormal)
+            {
+                // Only select basic tetrominos (indices 0-6)
+                index = Random.Range(0, 7);
+            }
+            else
+            {
+                index = Random.Range(0, Templates.Length);
+            }
+            
             Template selected = Templates[index];
 
             // 15% chance for a normal piece (indices 0-6) to become a Slippery piece
-            if (index <= 6 && Random.value < 0.15f)
+            if (!forceNormal && index <= 6 && Random.value < 0.15f)
             {
                 BlockCellState[] slipperyCells = new BlockCellState[selected.Cells.Length];
                 for (int i = 0; i < selected.Cells.Length; i++)
@@ -147,6 +157,13 @@ namespace GraviTrix.Core
         {
             if (Templates.Length <= 8) return null;
             Template selected = Templates[8]; // Index 8 is the 2x2 Lava piece
+            return new PieceInstance(origin, selected.Pivot, selected.Cells);
+        }
+
+        public static PieceInstance CreateMetal(Vector2Int origin)
+        {
+            if (Templates.Length <= 9) return null;
+            Template selected = Templates[9]; // Index 9 is the metal single cell
             return new PieceInstance(origin, selected.Pivot, selected.Cells);
         }
 

@@ -451,6 +451,125 @@ namespace GraviTrix.Runtime
             }
         }
 
+        public void PlayBombAnimation(List<BlockCellInfo> cellsToAnimate, float duration)
+        {
+            StartCoroutine(BombAnimationCoroutine(new List<BlockCellInfo>(cellsToAnimate), duration));
+        }
+
+        private IEnumerator BombAnimationCoroutine(List<BlockCellInfo> cells, float duration)
+        {
+            List<BlockCellView> animatingViews = new List<BlockCellView>();
+            List<Vector3> basePositions = new List<Vector3>();
+            List<Vector3> scatterOffsets = new List<Vector3>();
+            List<float> spinSpeeds = new List<float>();
+
+            // Cloud explosion overlay instead of flashbang
+            GameObject flashObj = new GameObject("BombCloud");
+            flashObj.transform.SetParent(boardRoot != null ? boardRoot : transform, false);
+            SpriteRenderer flashSr = flashObj.AddComponent<SpriteRenderer>();
+            
+            if (flashSprite != null) flashSr.sprite = flashSprite;
+            else
+            {
+#if UNITY_EDITOR
+                flashSr.sprite = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/Blocks/block_removed.png");
+#endif
+            }
+            flashSr.sortingOrder = 20;
+            flashSr.color = new Color(0.2f, 0.2f, 0.2f, 0f); // Dark smoke color
+            flashObj.transform.localScale = new Vector3(5f, 5f, 1f); // Start small, grow big
+
+            foreach (BlockCellInfo cell in cells)
+            {
+                if (cellPrefab == null) continue;
+                Transform root = boardRoot != null ? boardRoot : transform;
+                BlockCellView view = Instantiate(cellPrefab, root);
+                view.gameObject.SetActive(true);
+                float x = cell.Position.x * cellSize + cachedBoardOffset.x;
+                float y = -cell.Position.y * cellSize + cachedBoardOffset.y;
+                Vector3 pos = new Vector3(x, y, 0f);
+                view.transform.localPosition = pos;
+                view.SetCell(cell, null);
+                
+                SpriteRenderer sr = view.GetComponent<SpriteRenderer>();
+                if (sr != null) 
+                {
+                    sr.sortingOrder = 15;
+                    // Random mix of orange/fire and dark smoke
+                    sr.color = UnityEngine.Random.value > 0.5f ? new Color(1f, 0.4f, 0f, 1f) : new Color(0.3f, 0.3f, 0.3f, 1f);
+                }
+                
+                animatingViews.Add(view);
+                basePositions.Add(pos);
+                
+                Vector3 randomDir = new Vector3(UnityEngine.Random.Range(-1f, 1f), UnityEngine.Random.Range(-1f, 1f), 0f).normalized;
+                scatterOffsets.Add(randomDir * UnityEngine.Random.Range(8f, 20f) * cellSize); 
+                spinSpeeds.Add(UnityEngine.Random.Range(-800f, 800f));
+            }
+
+            float elapsed = 0f;
+            Vector3 originalScale = Vector3.one;
+            
+            Transform targetToShake = boardRoot != null ? boardRoot : transform;
+            Vector3 originalTargetPos = targetToShake.localPosition;
+
+            while (elapsed < duration)
+            {
+                elapsed += Time.deltaTime;
+                float t = elapsed / duration;
+
+                // Board Shake (instead of full camera shake)
+                float shakeIntensity = (1f - t) * 0.8f; // Shake reduces over time
+                Vector3 shakeOffset = new Vector3(UnityEngine.Random.Range(-1f, 1f), UnityEngine.Random.Range(-1f, 1f), 0f) * shakeIntensity;
+                targetToShake.localPosition = originalTargetPos + shakeOffset;
+
+                if (flashSr != null)
+                {
+                    // Cloud expands and fades
+                    float cloudT = 1f - Mathf.Pow(1f - t, 3f);
+                    flashObj.transform.localScale = Vector3.Lerp(new Vector3(5f, 5f, 1f), new Vector3(40f, 40f, 1f), cloudT);
+                    
+                    float alpha = t < 0.2f ? t / 0.2f : 1f - ((t - 0.2f) / 0.8f);
+                    flashSr.color = new Color(0.15f, 0.15f, 0.15f, alpha * 0.8f); // Dark smoke
+                }
+
+                for (int i = 0; i < animatingViews.Count; i++)
+                {
+                    BlockCellView view = animatingViews[i];
+                    if (view == null) continue;
+
+                    Vector3 basePos = basePositions[i];
+                    Vector3 scatterOffset = scatterOffsets[i];
+                    float spin = spinSpeeds[i];
+                    SpriteRenderer sr = view.GetComponent<SpriteRenderer>();
+
+                    float moveEaseT = 1f - Mathf.Pow(1f - t, 3f); 
+                    
+                    float scale = Mathf.Lerp(1.2f, 0f, t * t);
+                    view.transform.localScale = originalScale * scale;
+                    view.transform.localPosition = basePos + scatterOffset * moveEaseT;
+                    view.transform.localRotation = Quaternion.Euler(0, 0, spin * moveEaseT);
+                    
+                    if (sr != null)
+                    {
+                        Color c = sr.color;
+                        c.a = Mathf.Lerp(1f, 0f, t);
+                        sr.color = c;
+                    }
+                }
+                yield return null;
+            }
+
+            targetToShake.localPosition = originalTargetPos;
+
+            if (flashObj != null) Destroy(flashObj);
+
+            foreach (BlockCellView view in animatingViews)
+            {
+                if (view != null) Destroy(view.gameObject);
+            }
+        }
+
         public void PlayExtinguishAnimation(List<BlockCellInfo> cellsToAnimate, float duration)
         {
             StartCoroutine(ExtinguishAnimationCoroutine(new List<BlockCellInfo>(cellsToAnimate), duration));

@@ -34,6 +34,8 @@ namespace GraviTrix.Core
         private int movesBeforeRotationTarget;
         private bool isBoardRotated;
         private int comboCount;
+        private int spawnedPiecesCount;
+        private int movesUntilNextMetal;
 
         private List<int> pendingLineRowsToClear = new List<int>();
         private HashSet<Vector2Int> hiddenCells = new HashSet<Vector2Int>();
@@ -125,6 +127,8 @@ namespace GraviTrix.Core
             fallAccumulator = 0f;
             isBoardRotated = false;
             comboCount = 0;
+            spawnedPiecesCount = 0;
+            movesUntilNextMetal = UnityEngine.Random.Range(15, 21);
             pendingLineRowsToClear.Clear();
             hiddenCells.Clear();
             rescueCooldown = 0;
@@ -251,9 +255,13 @@ namespace GraviTrix.Core
 
         private void SpawnNextPiece()
         {
+            spawnedPiecesCount++;
+            bool activeIsInitial = spawnedPiecesCount <= 4;
+            bool nextIsInitial = (spawnedPiecesCount + 1) <= 4;
+
             if (nextPiece == null)
             {
-                nextPiece = FallbackPieceFactory.CreateRandom(GetSpawnOrigin());
+                nextPiece = FallbackPieceFactory.CreateRandom(GetSpawnOrigin(), activeIsInitial);
             }
 
             activePiece = nextPiece;
@@ -282,14 +290,23 @@ namespace GraviTrix.Core
             bool isLavaInPlay = (activePiece != null && activePiece.ContainsKind(BlockKind.Lava)) ||
                                 (heldPiece != null && heldPiece.ContainsKind(BlockKind.Lava));
 
-            if (centerOccupied >= 6 && rescueCooldown <= 0 && !isLavaInPlay)
+            if (centerOccupied >= 6 && rescueCooldown <= 0 && !isLavaInPlay && !nextIsInitial)
             {
                 nextPiece = FallbackPieceFactory.CreateLava(GetSpawnOrigin());
                 rescueCooldown = 4; // Must drop 4 normal pieces before another rescue lava
             }
             else
             {
-                nextPiece = FallbackPieceFactory.CreateRandom(GetSpawnOrigin());
+                movesUntilNextMetal--;
+                if (movesUntilNextMetal <= 0 && !nextIsInitial)
+                {
+                    nextPiece = FallbackPieceFactory.CreateMetal(GetSpawnOrigin());
+                    movesUntilNextMetal = UnityEngine.Random.Range(10, 16);
+                }
+                else
+                {
+                    nextPiece = FallbackPieceFactory.CreateRandom(GetSpawnOrigin(), nextIsInitial);
+                }
             }
 
             if (activePiece == null)
@@ -438,6 +455,12 @@ namespace GraviTrix.Core
 
         private void CheckLinesAndSettle()
         {
+            if (board.HasAdjacentMetalBlocks())
+            {
+                TriggerAllClearBomb();
+                return;
+            }
+
             List<int> lineRowsToClear = new List<int>();
             HashSet<int> seenRows = new HashSet<int>();
 
@@ -569,6 +592,12 @@ namespace GraviTrix.Core
 
         private void CheckLinesAndSettleAfterDrop()
         {
+            if (board.HasAdjacentMetalBlocks())
+            {
+                TriggerAllClearBomb();
+                return;
+            }
+
             List<int> fullRows = board.GetFullRows();
             if (fullRows.Count > 0)
             {
@@ -602,6 +631,37 @@ namespace GraviTrix.Core
 
             phase = GamePhase.Spawning;
             SpawnNextPiece();
+            UpdateHud();
+            RefreshViews();
+        }
+
+        private void TriggerAllClearBomb()
+        {
+            List<BlockCellInfo> allCells = new List<BlockCellInfo>(board.GetOccupiedCells());
+            
+            int cellCount = allCells.Count;
+            score += (cellCount * pointsPerBlock) + 1000; // Big bonus for bomb clear
+            
+            board.ClearAll();
+            hiddenCells.Clear();
+
+            phase = GamePhase.ClearingLines;
+            phaseTimer = 1.0f; // Long animation duration
+
+            // Set pendingIsRotation to true so that after animation ends, it resets gravity and spawns next piece
+            pendingIsRotation = true;
+            pendingLineRowsToClear.Clear();
+
+            if (SfxManager.Instance != null)
+            {
+                SfxManager.Instance.PlayBombExplosion();
+            }
+
+            if (boardView != null)
+            {
+                boardView.PlayBombAnimation(allCells, 1.0f);
+            }
+            
             UpdateHud();
             RefreshViews();
         }
@@ -642,6 +702,11 @@ namespace GraviTrix.Core
             {
                 if (config != null) score += config.ComboBonus * comboCount;
                 comboCount++;
+                
+                if (comboCount > 1 && hudView != null)
+                {
+                    hudView.ShowComboText(comboCount);
+                }
             }
             else
             {

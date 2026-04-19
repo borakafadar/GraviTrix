@@ -22,6 +22,7 @@ public class SfxManager : MonoBehaviour
     private AudioClip lavaMeltClip;
     private AudioClip lineClearClip;
     private AudioClip gameOverClip;
+    private AudioClip bombExplosionClip;
 
     private void Awake()
     {
@@ -56,6 +57,7 @@ public class SfxManager : MonoBehaviour
         lavaMeltClip = Resources.Load<AudioClip>("SoundEffects/lava_melt_sound");
         lineClearClip = Resources.Load<AudioClip>("SoundEffects/line_clear_sound");
         gameOverClip = Resources.Load<AudioClip>("SoundEffects/game_over");
+        bombExplosionClip = Resources.Load<AudioClip>("SoundEffects/bomb_sound");
     }
 
     // ==================== Public play methods ====================
@@ -111,6 +113,14 @@ public class SfxManager : MonoBehaviour
     public void PlayGameOver()
     {
         PlayClip(gameOverClip);
+    }
+
+    /// <summary>
+    /// Play the massive bomb explosion sound.
+    /// </summary>
+    public void PlayBombExplosion()
+    {
+        PlayClip(bombExplosionClip);
     }
 
     // ==================== Volume control ====================

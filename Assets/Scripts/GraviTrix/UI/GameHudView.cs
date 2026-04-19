@@ -15,9 +15,27 @@ namespace GraviTrix.UI
         private Image rotationArrowImage;
         private List<GameObject> tickMarks = new List<GameObject>();
         private int lastTotalMoves = -1;
+        
+        private float targetScaleX = 1f;
 
         private void Awake()
         {
+            // Auto-configure Canvas Scaler for responsive UI
+            Canvas canvas = GetComponentInParent<Canvas>();
+            if (canvas != null)
+            {
+                Canvas rootCanvas = canvas.rootCanvas;
+                CanvasScaler scaler = rootCanvas.GetComponent<CanvasScaler>();
+                if (scaler == null)
+                {
+                    scaler = rootCanvas.gameObject.AddComponent<CanvasScaler>();
+                }
+                scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+                scaler.referenceResolution = new Vector2(1080, 1920);
+                scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
+                scaler.matchWidthOrHeight = 0.8f;
+            }
+
             if (scoreText != null)
             {
                 SetupUIElement(scoreText.transform as RectTransform, new Vector2(0f, -30f), new Vector2(600f, 160f), new Vector2(0.5f, 1f));
@@ -109,10 +127,7 @@ namespace GraviTrix.UI
 
             if (rotationArrowImage != null)
             {
-                // Flip horizontally for left rotation (sprite is drawn pointing right)
-                Vector3 scale = rotationArrowImage.rectTransform.localScale;
-                scale.x = rotateLeft ? -1f : 1f;
-                rotationArrowImage.rectTransform.localScale = scale;
+                targetScaleX = rotateLeft ? -1f : 1f;
             }
 
             // Update tick marks on the progress bar
@@ -120,6 +135,26 @@ namespace GraviTrix.UI
             {
                 RebuildTickMarks(totalMoves);
                 lastTotalMoves = totalMoves;
+            }
+        }
+
+        private void Update()
+        {
+            if (rotationArrowImage != null)
+            {
+                Vector3 currentScale = rotationArrowImage.rectTransform.localScale;
+                if (!Mathf.Approximately(currentScale.x, targetScaleX))
+                {
+                    // Animate the scale to create a horizontal flipping effect
+                    currentScale.x = Mathf.Lerp(currentScale.x, targetScaleX, Time.deltaTime * 10f);
+                    
+                    if (Mathf.Abs(currentScale.x - targetScaleX) < 0.01f)
+                    {
+                        currentScale.x = targetScaleX;
+                    }
+                    
+                    rotationArrowImage.rectTransform.localScale = currentScale;
+                }
             }
         }
 
@@ -207,6 +242,76 @@ namespace GraviTrix.UI
 
                 tickMarks.Add(tickObj);
             }
+        }
+
+        public void ShowComboText(int comboCount)
+        {
+            if (scoreText == null) return;
+            
+            string message = "";
+            if (comboCount == 2) message = "NICE!";
+            else if (comboCount == 3) message = "GREAT!";
+            else if (comboCount == 4) message = "AWESOME!";
+            else if (comboCount == 5) message = "PERFECT!";
+            else if (comboCount >= 6) message = "AMAZING!";
+            
+            if (string.IsNullOrEmpty(message)) return;
+            
+            GameObject textObj = new GameObject("ComboText");
+            textObj.transform.SetParent(scoreText.transform.parent, false);
+            
+            TextMeshProUGUI tmp = textObj.AddComponent<TextMeshProUGUI>();
+            tmp.text = $"{message}\n<size=50%>{comboCount}x COMBO!</size>";
+            tmp.fontSize = 80;
+            tmp.fontStyle = FontStyles.Bold;
+            tmp.alignment = TextAlignmentOptions.Center;
+            tmp.enableVertexGradient = true;
+            tmp.colorGradient = new VertexGradient(new Color(1f, 0.8f, 0f), new Color(1f, 0.5f, 0f), new Color(1f, 0.2f, 0f), new Color(1f, 0f, 0f));
+            
+            RectTransform rt = textObj.GetComponent<RectTransform>();
+            rt.anchorMin = new Vector2(0.5f, 0.5f);
+            rt.anchorMax = new Vector2(0.5f, 0.5f);
+            rt.pivot = new Vector2(0.5f, 0.5f);
+            rt.anchoredPosition = new Vector2(0f, 0f);
+            rt.sizeDelta = new Vector2(600f, 200f);
+            
+            // Add a little drop shadow for readability
+            UnityEngine.UI.Shadow shadow = textObj.AddComponent<UnityEngine.UI.Shadow>();
+            shadow.effectColor = new Color(0f, 0f, 0f, 0.6f);
+            shadow.effectDistance = new Vector2(3f, -3f);
+            
+            StartCoroutine(AnimateComboText(tmp));
+        }
+
+        private System.Collections.IEnumerator AnimateComboText(TextMeshProUGUI tmp)
+        {
+            float duration = 1.2f;
+            float elapsed = 0f;
+            RectTransform rt = tmp.rectTransform;
+            
+            while (elapsed < duration)
+            {
+                elapsed += Time.deltaTime;
+                float t = elapsed / duration;
+                
+                // Scale animation (pop out then settle)
+                float scale = 1f + Mathf.Sin(t * Mathf.PI) * 0.5f;
+                rt.localScale = new Vector3(scale, scale, 1f);
+                
+                // Float up
+                rt.anchoredPosition = new Vector2(0f, t * 150f);
+                
+                // Fade out at the end
+                if (t > 0.7f)
+                {
+                    float alpha = 1f - ((t - 0.7f) / 0.3f);
+                    tmp.color = new Color(tmp.color.r, tmp.color.g, tmp.color.b, alpha);
+                }
+                
+                yield return null;
+            }
+            
+            Destroy(tmp.gameObject);
         }
     }
 }

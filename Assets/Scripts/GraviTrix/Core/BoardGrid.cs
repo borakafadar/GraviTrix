@@ -458,5 +458,47 @@ namespace GraviTrix.Core
             }
             return movements;
         }
+        public bool HasAdjacentMetalBlocks()
+        {
+            // Check horizontally
+            for (int y = 0; y < height; y++)
+            {
+                for (int x = 0; x < width - 1; x++)
+                {
+                    if (occupied[x, y] && occupants[x, y].Kind == BlockKind.Metal &&
+                        occupied[x + 1, y] && occupants[x + 1, y].Kind == BlockKind.Metal)
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            // Check vertically
+            for (int x = 0; x < width; x++)
+            {
+                for (int y = 0; y < height - 1; y++)
+                {
+                    if (occupied[x, y] && occupants[x, y].Kind == BlockKind.Metal &&
+                        occupied[x, y + 1] && occupants[x, y + 1].Kind == BlockKind.Metal)
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        public void ClearAll()
+        {
+            for (int x = 0; x < width; x++)
+            {
+                for (int y = 0; y < height; y++)
+                {
+                    occupied[x, y] = false;
+                    occupants[x, y] = default(CellOccupant);
+                }
+            }
+        }
     }
 }

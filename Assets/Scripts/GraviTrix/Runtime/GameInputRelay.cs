@@ -126,6 +126,13 @@ namespace GraviTrix.Runtime
 
             if (touch.press.wasPressedThisFrame)
             {
+                // Ignore touch if it's over a UI element (like our mobile buttons)
+                if (UnityEngine.EventSystems.EventSystem.current != null && 
+                    UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject(touch.touchId.ReadValue()))
+                {
+                    return;
+                }
+
                 touchActive = true;
                 touchStartPosition = touch.position.ReadValue();
                 touchStartTime = Time.unscaledTime;

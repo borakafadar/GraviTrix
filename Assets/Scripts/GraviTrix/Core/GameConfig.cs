@@ -16,7 +16,7 @@ namespace GraviTrix.Core
         [SerializeField] private float boardRotationPauseSeconds = 0.35f;
 
         [Header("Rotation Schedule")]
-        [SerializeField] private int minMovesBeforeRotation = 3;
+        [SerializeField] private int minMovesBeforeRotation = 4;
         [SerializeField] private int maxMovesBeforeRotation = 8;
 
         [Header("Scoring")]
