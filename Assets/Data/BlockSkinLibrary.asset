@@ -23,3 +23,4 @@ MonoBehaviour:
   metal: {fileID: 3832477751378960149, guid: 67b9b3eae8016134b9a4d65e0463802a, type: 3}
   lava: {fileID: -6141011602630177560, guid: e97562c02026a8f449174a004eaf7dda, type: 3}
   line: {fileID: 6987477901018549035, guid: 187731f85eed0f947bd2c4fcde1da52e, type: 3}
+  obsidian: {fileID: -3492138140296996817, guid: 9c35f7dc35b9feb47b07170a65e26e06, type: 3}

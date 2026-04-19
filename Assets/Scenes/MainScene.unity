@@ -231,6 +231,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 395179656}
+  - component: {fileID: 395179657}
   m_Layer: 0
   m_Name: GameRoot
   m_TagString: Untagged
@@ -257,6 +258,21 @@ Transform:
   - {fileID: 196531788}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &395179657
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 395179655}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3e70c56e6c0f8a54ebf39276b559092e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GraviTrix.UI.PauseMenuView
+  gameController: {fileID: 1608055386}
+  pauseButtonSprite: {fileID: 21300000, guid: 9b5be46423f081f4e8204eddada17266, type: 3}
+  cancelButtonSprite: {fileID: 2139071567003920283, guid: f59cf6e4bfeb9174b915ad99d0732105, type: 3}
 --- !u!1 &465366943
 GameObject:
   m_ObjectHideFlags: 0
@@ -1051,6 +1067,7 @@ MonoBehaviour:
   rotationText: {fileID: 0}
   scoreText: {fileID: 465366945}
   stateText: {fileID: 2038810663}
+  rotationArrowSprite: {fileID: 0}
 --- !u!1 &1750779900
 GameObject:
   m_ObjectHideFlags: 0
