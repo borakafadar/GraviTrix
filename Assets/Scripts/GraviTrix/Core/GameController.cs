@@ -495,6 +495,11 @@ namespace GraviTrix.Core
                     SfxManager.Instance.PlayLineClear();
                 }
 
+                if (fullRows.Count > 0 && hudView != null)
+                {
+                    hudView.ShowActionText("GOOD!");
+                }
+
                 boardView.PlayClearAnimation(cellsToAnimate, 0.4f);
                 UpdateHud();
                 RefreshViews();
@@ -616,6 +621,11 @@ namespace GraviTrix.Core
                     SfxManager.Instance.PlayLineClear();
                 }
 
+                if (hudView != null)
+                {
+                    hudView.ShowActionText("GOOD!");
+                }
+
                 if (boardView != null)
                 {
                     boardView.PlayClearAnimation(cellsToAnimate, 0.4f);
@@ -660,6 +670,11 @@ namespace GraviTrix.Core
             if (boardView != null)
             {
                 boardView.PlayBombAnimation(allCells, 1.0f);
+            }
+
+            if (hudView != null)
+            {
+                hudView.ShowActionText("EXCELLENT!");
             }
             
             UpdateHud();

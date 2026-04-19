@@ -66,11 +66,11 @@ namespace GraviTrix.Runtime
             }
 
             // Always render HOLD box
-            RenderPreviewBox("HOLD", 1.5f, 4.0f, heldPiece, board);
+            RenderPreviewBox("HOLD", 1.5f, 3.0f, heldPiece, board);
 
             // Always render NEXT box
             float nextX = (board != null ? board.Width - 2.5f : 8.5f);
-            RenderPreviewBox("NEXT", nextX, 4.0f, nextPiece, board);
+            RenderPreviewBox("NEXT", nextX, 3.0f, nextPiece, board);
         }
 
         private void RenderPreviewBox(string label, float xBoardPos, float yBoardPos, PieceInstance piece, BoardGrid board)
@@ -248,7 +248,7 @@ namespace GraviTrix.Runtime
                 float topScreenY = cam.transform.position.y + cam.orthographicSize;
                 float margin = cellSize; 
                 
-                centeredY = topScreenY - margin - (5.5f * cellSize);
+                centeredY = topScreenY - margin - (6.5f * cellSize);
             }
 
             return new Vector2(centeredX, centeredY) + manualBoardOffset;

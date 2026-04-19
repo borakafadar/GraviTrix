@@ -38,7 +38,7 @@ namespace GraviTrix.UI
 
             if (scoreText != null)
             {
-                SetupUIElement(scoreText.transform as RectTransform, new Vector2(0f, -30f), new Vector2(600f, 160f), new Vector2(0.5f, 1f));
+                SetupUIElement(scoreText.transform as RectTransform, new Vector2(0f, -110f), new Vector2(600f, 160f), new Vector2(0.5f, 1f));
                 scoreText.fontSize = 52;
                 scoreText.fontStyle = FontStyles.Bold;
                 scoreText.enableVertexGradient = true;
@@ -61,7 +61,7 @@ namespace GraviTrix.UI
             {
                 RectTransform rt = rotationProgressBar.transform as RectTransform;
                 // Progress bar sits between the arrow and the grid
-                SetupUIElement(rt, new Vector2(0f, -340f), new Vector2(480f, 26f), new Vector2(0.5f, 1f));
+                SetupUIElement(rt, new Vector2(0f, -420f), new Vector2(480f, 26f), new Vector2(0.5f, 1f));
                 rt.localRotation = Quaternion.identity;
 
                 if (rotationProgressBar.fillRect != null)
@@ -201,7 +201,7 @@ namespace GraviTrix.UI
             arrowRt.anchorMax = new Vector2(0.5f, 1f);
             arrowRt.pivot = new Vector2(0.5f, 0.5f);
             // Between score bottom (~-190) and progress bar (-340)
-            arrowRt.anchoredPosition = new Vector2(0f, -260f);
+            arrowRt.anchoredPosition = new Vector2(0f, -340f);
             arrowRt.sizeDelta = new Vector2(120f, 120f);
         }
 
@@ -311,6 +311,92 @@ namespace GraviTrix.UI
                 yield return null;
             }
             
+            Destroy(tmp.gameObject);
+        }
+
+        public void ShowActionText(string message)
+        {
+            if (scoreText == null) return;
+
+            GameObject textObj = new GameObject("ActionText");
+            textObj.transform.SetParent(scoreText.transform.parent, false);
+
+            TextMeshProUGUI tmp = textObj.AddComponent<TextMeshProUGUI>();
+            tmp.text = message;
+            tmp.fontSize = 96;
+            tmp.fontStyle = FontStyles.Bold;
+            tmp.alignment = TextAlignmentOptions.Center;
+            tmp.color = new Color(1f, 0.92f, 0.016f); // Bright yellow
+            tmp.enableVertexGradient = true;
+            tmp.colorGradient = new VertexGradient(
+                new Color(1f, 1f, 0.4f),   // top-left: light yellow
+                new Color(1f, 1f, 0.4f),   // top-right: light yellow
+                new Color(1f, 0.85f, 0f),  // bottom-left: golden yellow
+                new Color(1f, 0.85f, 0f)   // bottom-right: golden yellow
+            );
+
+            RectTransform rt = textObj.GetComponent<RectTransform>();
+            rt.anchorMin = new Vector2(0.5f, 0.5f);
+            rt.anchorMax = new Vector2(0.5f, 0.5f);
+            rt.pivot = new Vector2(0.5f, 0.5f);
+            rt.anchoredPosition = Vector2.zero;
+            rt.sizeDelta = new Vector2(800f, 200f);
+
+            UnityEngine.UI.Outline outline = textObj.AddComponent<UnityEngine.UI.Outline>();
+            outline.effectColor = new Color(0.6f, 0.4f, 0f, 0.8f);
+            outline.effectDistance = new Vector2(3f, -3f);
+
+            StartCoroutine(AnimateActionText(tmp));
+        }
+
+        private System.Collections.IEnumerator AnimateActionText(TextMeshProUGUI tmp)
+        {
+            float duration = 1.5f;
+            float elapsed = 0f;
+            RectTransform rt = tmp.rectTransform;
+
+            // Start small
+            rt.localScale = Vector3.zero;
+
+            while (elapsed < duration)
+            {
+                elapsed += Time.deltaTime;
+                float t = elapsed / duration;
+
+                // Pop-in with overshoot, then settle
+                float scale;
+                if (t < 0.2f)
+                {
+                    // Quick scale up with overshoot
+                    float easeT = t / 0.2f;
+                    scale = Mathf.LerpUnclamped(0f, 1.3f, easeT);
+                }
+                else if (t < 0.35f)
+                {
+                    // Settle back down
+                    float easeT = (t - 0.2f) / 0.15f;
+                    scale = Mathf.Lerp(1.3f, 1f, easeT);
+                }
+                else
+                {
+                    scale = 1f;
+                }
+
+                rt.localScale = new Vector3(scale, scale, 1f);
+
+                // Float up slowly
+                rt.anchoredPosition = new Vector2(0f, t * 100f);
+
+                // Fade out near the end
+                if (t > 0.75f)
+                {
+                    float alpha = 1f - ((t - 0.75f) / 0.25f);
+                    tmp.color = new Color(tmp.color.r, tmp.color.g, tmp.color.b, alpha);
+                }
+
+                yield return null;
+            }
+
             Destroy(tmp.gameObject);
         }
     }
