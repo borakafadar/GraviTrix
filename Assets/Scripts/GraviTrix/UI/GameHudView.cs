@@ -11,6 +11,8 @@ namespace GraviTrix.UI
         [SerializeField] private TextMeshProUGUI scoreText;
         [SerializeField] private TextMeshProUGUI stateText;
 
+        private TextMeshProUGUI rotationArrowText;
+
         private void Awake()
         {
             if (scoreText != null)
@@ -44,7 +46,7 @@ namespace GraviTrix.UI
             {
                 RectTransform rt = rotationProgressBar.transform as RectTransform;
                 // Make it horizontal and roughly grid width (e.g. 480f)
-                SetupUIElement(rt, new Vector2(0f, -260f), new Vector2(480f, 20f), new Vector2(0.5f, 1f));
+                SetupUIElement(rt, new Vector2(0f, -280f), new Vector2(480f, 30f), new Vector2(0.5f, 1f));
                 rt.localRotation = Quaternion.identity; // Reset rotation
 
                 if (rotationProgressBar.fillRect != null)
@@ -65,6 +67,9 @@ namespace GraviTrix.UI
                         fillImage.type = Image.Type.Simple;
                     }
                 }
+
+                // ─── Rotation Direction Arrow ───
+                CreateRotationArrow(rt);
             }
         }
 
@@ -80,7 +85,7 @@ namespace GraviTrix.UI
             }
         }
 
-        public void SetRotationProgress(float normalizedProgress, int movesRemaining)
+        public void SetRotationProgress(float normalizedProgress, int movesRemaining, bool rotateLeft = true)
         {
             if (rotationProgressBar != null)
             {
@@ -90,6 +95,11 @@ namespace GraviTrix.UI
             if (rotationText != null)
             {
                 rotationText.text = movesRemaining > 0 ? $"ROTATION IN {movesRemaining}" : "ROTATING...";
+            }
+
+            if (rotationArrowText != null)
+            {
+                rotationArrowText.text = rotateLeft ? "< < <" : "> > >";
             }
         }
 
@@ -104,6 +114,31 @@ namespace GraviTrix.UI
         public void SetState(string state)
         {
             // State text is disabled, do nothing
+        }
+
+        private void CreateRotationArrow(RectTransform progressBarRt)
+        {
+            GameObject arrowObj = new GameObject("Rotation Arrow");
+            arrowObj.transform.SetParent(progressBarRt.parent, false);
+
+            rotationArrowText = arrowObj.AddComponent<TextMeshProUGUI>();
+            rotationArrowText.text = "< < <"; // default left
+            rotationArrowText.fontSize = 36;
+            rotationArrowText.fontStyle = FontStyles.Bold;
+            rotationArrowText.alignment = TextAlignmentOptions.Center;
+            rotationArrowText.color = new Color(1f, 0.85f, 0.3f); // Golden yellow
+            rotationArrowText.enableVertexGradient = true;
+            rotationArrowText.colorGradient = new VertexGradient(
+                new Color(1f, 0.9f, 0.4f), new Color(1f, 0.9f, 0.4f),
+                new Color(1f, 0.6f, 0.2f), new Color(1f, 0.6f, 0.2f));
+
+            RectTransform arrowRt = arrowObj.GetComponent<RectTransform>();
+            arrowRt.anchorMin = new Vector2(0.5f, 1f);
+            arrowRt.anchorMax = new Vector2(0.5f, 1f);
+            arrowRt.pivot = new Vector2(0.5f, 1f);
+            // Between score (y=-30, h=160) and progress bar (y=-280)
+            arrowRt.anchoredPosition = new Vector2(0f, -190f);
+            arrowRt.sizeDelta = new Vector2(300f, 50f);
         }
     }
 }

@@ -19,6 +19,7 @@ namespace GraviTrix.Core
         [Header("Views")]
         [SerializeField] private BoardView boardView;
         [SerializeField] private GameHudView hudView;
+        [SerializeField] private GameOverPopup gameOverPopup;
 
         private BoardGrid board;
         private PieceInstance activePiece;
@@ -113,6 +114,7 @@ namespace GraviTrix.Core
         public void RestartGame()
         {
             Time.timeScale = 1f;
+            if (gameOverPopup != null) gameOverPopup.Hide();
             board.Clear();
             score = 0;
             activePiece = null;
@@ -715,18 +717,18 @@ namespace GraviTrix.Core
 
             if (phase == GamePhase.RotatingBoard)
             {
-                hudView.SetRotationProgress(1f, 0);
+                hudView.SetRotationProgress(1f, 0, !isBoardRotated);
                 return;
             }
 
             if (movesBeforeRotationTarget <= 0)
             {
-                hudView.SetRotationProgress(0f, movesUntilRotation);
+                hudView.SetRotationProgress(0f, movesUntilRotation, !isBoardRotated);
                 return;
             }
 
             float progress = 1f - Mathf.Clamp01((float)movesUntilRotation / movesBeforeRotationTarget);
-            hudView.SetRotationProgress(progress, movesUntilRotation);
+            hudView.SetRotationProgress(progress, movesUntilRotation, !isBoardRotated);
         }
 
         private void TriggerGameOver()
@@ -741,7 +743,19 @@ namespace GraviTrix.Core
             if (boardView != null)
             {
                 boardView.Render(board, activePiece, nextPiece, heldPiece, hiddenCells);
-                boardView.PlayGameOverAnimation();
+                boardView.PlayGameOverAnimation(OnGameOverAnimationComplete);
+            }
+            else
+            {
+                OnGameOverAnimationComplete();
+            }
+        }
+
+        private void OnGameOverAnimationComplete()
+        {
+            if (gameOverPopup != null)
+            {
+                gameOverPopup.Show(score);
             }
         }
 

@@ -977,12 +977,12 @@ namespace GraviTrix.Runtime
             onComplete?.Invoke();
         }
 
-        public void PlayGameOverAnimation()
+        public void PlayGameOverAnimation(Action onComplete = null)
         {
-            StartCoroutine(GameOverAnimationCoroutine());
+            StartCoroutine(GameOverAnimationCoroutine(onComplete));
         }
 
-        private IEnumerator GameOverAnimationCoroutine()
+        private IEnumerator GameOverAnimationCoroutine(Action onComplete)
         {
             List<BlockCellView> blocksToAnimate = new List<BlockCellView>();
             Transform targetRoot = boardRoot != null ? boardRoot : transform;
@@ -1120,6 +1120,8 @@ namespace GraviTrix.Runtime
 
                 yield return null;
             }
+
+            onComplete?.Invoke();
         }
 
         private float EaseOutBack(float x)
