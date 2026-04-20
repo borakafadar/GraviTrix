@@ -92,6 +92,11 @@ public class MainMenuBuilder : MonoBehaviour
             menuCamera.orthographic = true;
             menuCamera.orthographicSize = 5f;
             menuCamera.transform.position = new Vector3(0f, 0f, -10f);
+            
+            if (menuCamera.GetComponent<GraviTrix.Runtime.AspectRatioEnforcer>() == null)
+            {
+                menuCamera.gameObject.AddComponent<GraviTrix.Runtime.AspectRatioEnforcer>();
+            }
             return;
         }
 
@@ -108,6 +113,11 @@ public class MainMenuBuilder : MonoBehaviour
         menuCamera.farClipPlane = 100f;
 
         cameraObject.transform.position = new Vector3(0f, 0f, -10f);
+        
+        if (menuCamera.GetComponent<GraviTrix.Runtime.AspectRatioEnforcer>() == null)
+        {
+            menuCamera.gameObject.AddComponent<GraviTrix.Runtime.AspectRatioEnforcer>();
+        }
     }
 
     private void CreateCanvas()

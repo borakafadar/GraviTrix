@@ -45,7 +45,9 @@ namespace GraviTrix.UI
             GameObject canvasObj = new GameObject("PauseButton Canvas");
             canvasObj.transform.SetParent(transform, false);
             Canvas c = canvasObj.AddComponent<Canvas>();
-            c.renderMode = RenderMode.ScreenSpaceOverlay;
+            c.renderMode = RenderMode.ScreenSpaceCamera;
+            c.worldCamera = Camera.main;
+            c.planeDistance = 5f;
             c.sortingOrder = 90;
             CanvasScaler sc = canvasObj.AddComponent<CanvasScaler>();
             sc.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
@@ -99,7 +101,9 @@ namespace GraviTrix.UI
             GameObject canvasObj = new GameObject("PauseMenu Canvas");
             canvasObj.transform.SetParent(transform, false);
             pauseCanvas = canvasObj.AddComponent<Canvas>();
-            pauseCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            pauseCanvas.renderMode = RenderMode.ScreenSpaceCamera;
+            pauseCanvas.worldCamera = Camera.main;
+            pauseCanvas.planeDistance = 5f;
             pauseCanvas.sortingOrder = 95;
             CanvasScaler sc = canvasObj.AddComponent<CanvasScaler>();
             sc.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;

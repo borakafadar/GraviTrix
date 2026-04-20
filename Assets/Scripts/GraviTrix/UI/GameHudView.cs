@@ -28,6 +28,10 @@ namespace GraviTrix.UI
 
             if (localCanvas != null)
             {
+                localCanvas.renderMode = RenderMode.ScreenSpaceCamera;
+                localCanvas.worldCamera = Camera.main;
+                localCanvas.planeDistance = 5f; // Ensure it's in front of other elements
+
                 CanvasScaler scaler = localCanvas.GetComponent<CanvasScaler>();
                 if (scaler == null)
                 {

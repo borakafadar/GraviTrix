@@ -74,7 +74,9 @@ namespace GraviTrix.UI
             canvasObj.transform.SetParent(transform, false);
 
             popupCanvas = canvasObj.AddComponent<Canvas>();
-            popupCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            popupCanvas.renderMode = RenderMode.ScreenSpaceCamera;
+            popupCanvas.worldCamera = Camera.main;
+            popupCanvas.planeDistance = 5f;
             popupCanvas.sortingOrder = 100;
 
             CanvasScaler scaler = canvasObj.AddComponent<CanvasScaler>();

@@ -34,6 +34,11 @@ namespace GraviTrix.Runtime
             {
                 Camera.main.clearFlags = CameraClearFlags.SolidColor;
                 Camera.main.backgroundColor = new Color(70f / 255f, 44f / 255f, 125f / 255f); // #462C7D
+                
+                if (Camera.main.GetComponent<AspectRatioEnforcer>() == null)
+                {
+                    Camera.main.gameObject.AddComponent<AspectRatioEnforcer>();
+                }
             }
         }
 
@@ -297,7 +302,9 @@ namespace GraviTrix.Runtime
             gridBackground.transform.localPosition = new Vector3(centerX, centerY, 0f);
             gridBackground.transform.localScale = new Vector3(width, height, 1f);
 
-            float lineWidth = cellSize * 0.03f; 
+            float pixelSize = Camera.main != null ? (2f * Camera.main.orthographicSize) / Screen.height : 0.01f;
+            float lineWidth = Mathf.Max(cellSize * 0.03f, pixelSize * 1.2f); // Ensures lines are at least ~1.2 pixels thick to prevent vanishing
+
             int lineIndex = 0;
 
             for (int x = 0; x <= board.Width; x++)
