@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using GraviTrix.Runtime;
 
 namespace GraviTrix.UI
 {
@@ -173,19 +174,24 @@ namespace GraviTrix.UI
             // State text is disabled, do nothing
         }
 
+        [SerializeField] private BlockSkinLibrary skinLibrary;
         [SerializeField] private Sprite rotationArrowSprite;
 
         private void CreateRotationArrow(RectTransform progressBarRt)
         {
             Sprite arrowSprite = rotationArrowSprite;
+            
+            if (arrowSprite == null && skinLibrary != null && skinLibrary.RotationArrow != null)
+            {
+                arrowSprite = skinLibrary.RotationArrow;
+            }
 
-            // Editor fallback: load from asset path if not assigned
+#if UNITY_EDITOR
             if (arrowSprite == null)
             {
-#if UNITY_EDITOR
                 arrowSprite = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/Buttons/rotationArrow.png");
-#endif
             }
+#endif
 
             if (arrowSprite == null) return;
 

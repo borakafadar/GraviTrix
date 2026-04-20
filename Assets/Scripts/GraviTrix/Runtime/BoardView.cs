@@ -14,7 +14,7 @@ namespace GraviTrix.Runtime
         [SerializeField] private Color activePieceTint = new Color(1f, 1f, 1f, 0.9f);
         [SerializeField] private bool autoCenterBoard = true;
         [SerializeField] private Vector2 manualBoardOffset = Vector2.zero;
-        [SerializeField] private Sprite flashSprite;
+        [SerializeField] private BlockSkinLibrary skinLibrary;
 
         private readonly List<BlockCellView> spawnedViews = new List<BlockCellView>();
         private Vector2 cachedBoardOffset;
@@ -199,17 +199,16 @@ namespace GraviTrix.Runtime
                 var sr = view.GetComponent<SpriteRenderer>();
                 if (sr != null) 
                 {
-                    if (flashSprite != null) 
+                    if (skinLibrary != null && skinLibrary.BlockRemoved != null)
                     {
-                        sr.sprite = flashSprite;
+                        sr.sprite = skinLibrary.BlockRemoved;
                     }
-                    else
-                    {
 #if UNITY_EDITOR
-                        Sprite editorSprite = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/Blocks/block_removed.png");
-                        if (editorSprite != null) sr.sprite = editorSprite;
-#endif
+                    else if (sr.sprite == null)
+                    {
+                        sr.sprite = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/Blocks/block_removed.png");
                     }
+#endif
                     if (tintOverride == null) sr.color = Color.white;
                 }
             }
@@ -369,17 +368,16 @@ namespace GraviTrix.Runtime
                 if (sr != null) 
                 {
                     sr.sortingOrder = 10;
-                    if (flashSprite != null)
+                    if (skinLibrary != null && skinLibrary.BlockRemoved != null)
                     {
-                        sr.sprite = flashSprite;
+                        sr.sprite = skinLibrary.BlockRemoved;
                     }
-                    else
-                    {
 #if UNITY_EDITOR
-                        Sprite editorSprite = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/Blocks/block_removed.png");
-                        if (editorSprite != null) sr.sprite = editorSprite;
-#endif
+                    else if (sr.sprite == null)
+                    {
+                        sr.sprite = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/Blocks/block_removed.png");
                     }
+#endif
                     sr.color = Color.white;
                 }
                 
@@ -468,13 +466,17 @@ namespace GraviTrix.Runtime
             flashObj.transform.SetParent(boardRoot != null ? boardRoot : transform, false);
             SpriteRenderer flashSr = flashObj.AddComponent<SpriteRenderer>();
             
-            if (flashSprite != null) flashSr.sprite = flashSprite;
+            if (skinLibrary != null && skinLibrary.BlockRemoved != null)
+            {
+                flashSr.sprite = skinLibrary.BlockRemoved;
+            }
+#if UNITY_EDITOR
             else
             {
-#if UNITY_EDITOR
                 flashSr.sprite = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/Blocks/block_removed.png");
-#endif
             }
+#endif
+
             flashSr.sortingOrder = 20;
             flashSr.color = new Color(0.2f, 0.2f, 0.2f, 0f); // Dark smoke color
             flashObj.transform.localScale = new Vector3(5f, 5f, 1f); // Start small, grow big

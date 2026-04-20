@@ -24,3 +24,5 @@ MonoBehaviour:
   lava: {fileID: -6141011602630177560, guid: e97562c02026a8f449174a004eaf7dda, type: 3}
   line: {fileID: 6987477901018549035, guid: 187731f85eed0f947bd2c4fcde1da52e, type: 3}
   obsidian: {fileID: -3492138140296996817, guid: 9c35f7dc35b9feb47b07170a65e26e06, type: 3}
+  blockRemoved: {fileID: -7438192282750807332, guid: c9be475220cf03a4788102b5a35ffd45, type: 3}
+  rotationArrow: {fileID: -6208102592988932739, guid: e22622a7b40d17049bdfb92803409d4d, type: 3}
