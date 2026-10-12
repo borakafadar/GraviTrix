@@ -32,6 +32,18 @@ public class MusicManager : MonoBehaviour
         PlayMusic(musicClip);
     }
 
+    // Volume sliders only write PlayerPrefs to disk when their popup closes, so flush them if
+    // the app is backgrounded or the tab loses focus while a popup is still open.
+    private void OnApplicationPause(bool paused)
+    {
+        if (paused) PlayerPrefs.Save();
+    }
+
+    private void OnApplicationFocus(bool focused)
+    {
+        if (!focused) PlayerPrefs.Save();
+    }
+
     /// <summary>
     /// Starts playing the given music clip (looping).
     /// </summary>
