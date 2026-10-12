@@ -10,49 +10,30 @@ namespace GraviTrix.Runtime
     {
         [SerializeField] private Transform boardRoot;
         [SerializeField] private BlockCellView cellPrefab;
-        [SerializeField] private float cellSize = 1f;
+        [Tooltip("World size of one cell. The grid and HOLD/NEXT boxes in the scene are laid out for this value.")]
+        [SerializeField] private float cellSize = 0.3611111f;
+        [Tooltip("Local position of the top-left cell (0,0) under BoardRoot.")]
+        [SerializeField] private Vector2 boardOffset = new Vector2(-1.986111f, 2.2916667f);
         [SerializeField] private Color activePieceTint = new Color(1f, 1f, 1f, 0.9f);
-        [SerializeField] private bool autoCenterBoard = true;
-        [SerializeField] private Vector2 manualBoardOffset = Vector2.zero;
-        [SerializeField] private BlockSkinLibrary skinLibrary;
-        [SerializeField] private Sprite whiteSprite;
+
+        [Header("Scene Objects")]
+        [SerializeField] private SpriteRenderer gridBackground;
+        [SerializeField] private Transform holdPreviewAnchor;
+        [SerializeField] private Transform nextPreviewAnchor;
+
+        [Header("Effect Prefabs")]
+        [SerializeField] private SpriteRenderer clearShardPrefab;
+        [SerializeField] private SpriteRenderer bombCloudPrefab;
+        [SerializeField] private ParticleSystem smokePrefab;
 
         private readonly List<BlockCellView> spawnedViews = new List<BlockCellView>();
-        private Vector2 cachedBoardOffset;
-        
-        private GameObject gridRoot;
-        private List<LineRenderer> gridLines = new List<LineRenderer>();
-        private SpriteRenderer gridBackground;
-
-        private void Awake()
-        {
-            if (cellPrefab != null && cellPrefab.gameObject.scene.IsValid())
-            {
-                cellPrefab.gameObject.SetActive(false);
-            }
-
-            if (Camera.main != null)
-            {
-                Camera.main.clearFlags = CameraClearFlags.SolidColor;
-                Camera.main.backgroundColor = new Color(70f / 255f, 44f / 255f, 125f / 255f); // #462C7D
-                
-                if (Camera.main.GetComponent<AspectRatioEnforcer>() == null)
-                {
-                    Camera.main.gameObject.AddComponent<AspectRatioEnforcer>();
-                }
-            }
-        }
 
         public void Render(BoardGrid board, PieceInstance activePiece, PieceInstance nextPiece, PieceInstance heldPiece, HashSet<Vector2Int> hiddenCells = null)
         {
             ClearViews();
-            UpdateDynamicCellSize(board);
-            cachedBoardOffset = ComputeBoardOffset(board);
 
             if (board != null)
             {
-                RenderGridBackground(board);
-                
                 foreach (BlockCellInfo cell in board.GetOccupiedCells())
                 {
                     if (hiddenCells != null && hiddenCells.Contains(cell.Position))
@@ -71,59 +52,43 @@ namespace GraviTrix.Runtime
                 }
             }
 
-            // Always render HOLD box
-            RenderPreviewBox("HOLD", 1.5f, 3.0f, heldPiece, board);
-
-            // Always render NEXT box
-            float nextX = (board != null ? board.Width - 2.5f : 8.5f);
-            RenderPreviewBox("NEXT", nextX, 3.0f, nextPiece, board);
+            RenderPreviewPiece(holdPreviewAnchor, heldPiece);
+            RenderPreviewPiece(nextPreviewAnchor, nextPiece);
         }
 
-        private void RenderPreviewBox(string label, float xBoardPos, float yBoardPos, PieceInstance piece, BoardGrid board)
+        // Draws a half-scale copy of the piece centred on the HOLD/NEXT anchor authored in the scene.
+        private void RenderPreviewPiece(Transform anchor, PieceInstance piece)
         {
-            float centerX = xBoardPos * cellSize + cachedBoardOffset.x;
-            float centerY = yBoardPos * cellSize + cachedBoardOffset.y;
-            
-            float bgSize = cellSize * 3f; 
-            Vector3 bgPos = new Vector3(centerX, centerY, 5f);
-            
-            // Outer Box (Border) - sortingOrder -6 to prevent Z-fighting
-            SpawnBackgroundBox(bgPos, new Vector2(bgSize + 0.15f * cellSize, bgSize + 0.15f * cellSize), new Color(0.4f, 0.25f, 0.6f, 1f), transform, -6);
-            
-            // Inner Box - sortingOrder -5
-            SpawnBackgroundBox(bgPos, new Vector2(bgSize, bgSize), new Color(0.12f, 0.12f, 0.15f, 1f), transform, -5);
-            
-            // Text Label
-            SpawnLabel(label, new Vector3(centerX, centerY + bgSize * 0.5f - 0.35f * cellSize, 0f), transform);
-
-            // Piece Cells
-            if (piece != null)
+            if (piece == null)
             {
-                List<BlockCellInfo> cells = new List<BlockCellInfo>(piece.GetWorldCellsAtOrigin(Vector2Int.zero));
-                if (cells.Count > 0)
-                {
-                    float minX = float.MaxValue, maxX = float.MinValue;
-                    float minY = float.MaxValue, maxY = float.MinValue;
-                    foreach (var cell in cells)
-                    {
-                        minX = Mathf.Min(minX, cell.Position.x);
-                        maxX = Mathf.Max(maxX, cell.Position.x);
-                        minY = Mathf.Min(minY, -cell.Position.y); 
-                        maxY = Mathf.Max(maxY, -cell.Position.y);
-                    }
-                    
-                    float cx = (minX + maxX) * 0.5f;
-                    float cy = (minY + maxY) * 0.5f;
-                    
-                    float blockScale = 0.5f;
-                    
-                    foreach (var cell in cells)
-                    {
-                        float localX = (cell.Position.x - cx) * cellSize * blockScale;
-                        float localY = (-cell.Position.y - cy) * cellSize * blockScale;
-                        SpawnCellVisual(cell, new Vector3(centerX + localX, centerY + localY - 0.15f * cellSize, 0f), blockScale, transform);
-                    }
-                }
+                return;
+            }
+
+            List<BlockCellInfo> cells = new List<BlockCellInfo>(piece.GetWorldCellsAtOrigin(Vector2Int.zero));
+            if (cells.Count == 0)
+            {
+                return;
+            }
+
+            float minX = float.MaxValue, maxX = float.MinValue;
+            float minY = float.MaxValue, maxY = float.MinValue;
+            foreach (var cell in cells)
+            {
+                minX = Mathf.Min(minX, cell.Position.x);
+                maxX = Mathf.Max(maxX, cell.Position.x);
+                minY = Mathf.Min(minY, -cell.Position.y);
+                maxY = Mathf.Max(maxY, -cell.Position.y);
+            }
+
+            float cx = (minX + maxX) * 0.5f;
+            float cy = (minY + maxY) * 0.5f;
+            float blockScale = 0.5f;
+
+            foreach (var cell in cells)
+            {
+                float localX = (cell.Position.x - cx) * cellSize * blockScale;
+                float localY = (-cell.Position.y - cy) * cellSize * blockScale;
+                SpawnCellVisual(cell, new Vector3(localX, localY, 0f), blockScale, anchor);
             }
         }
 
@@ -142,49 +107,6 @@ namespace GraviTrix.Runtime
             spawnedViews.Add(view);
         }
 
-        private void SpawnLabel(string text, Vector3 pos, Transform root)
-        {
-            GameObject labelObj = new GameObject("Label");
-            if (root != null) labelObj.transform.SetParent(root, false);
-            
-            TMPro.TextMeshPro tm = labelObj.AddComponent<TMPro.TextMeshPro>();
-            tm.text = text;
-            tm.alignment = TMPro.TextAlignmentOptions.Center;
-            tm.fontSize = 1.5f; 
-            tm.color = Color.white;
-            tm.fontStyle = TMPro.FontStyles.Bold | TMPro.FontStyles.SmallCaps;
-            tm.enableVertexGradient = true;
-            tm.colorGradient = new TMPro.VertexGradient(new Color(1f, 0.9f, 0.4f), new Color(1f, 0.8f, 0.2f), new Color(1f, 0.6f, 0f), new Color(1f, 0.5f, 0f));
-            tm.characterSpacing = 3f;
-            
-            RectTransform rt = tm.GetComponent<RectTransform>();
-            rt.sizeDelta = new Vector2(20f, 5f);
-            
-            labelObj.transform.localPosition = pos;
-            tm.sortingOrder = 10;
-            
-            spawnedViews.Add(labelObj.AddComponent<BlockCellView>());
-        }
-
-        private void SpawnBackgroundBox(Vector3 position, Vector2 size, Color color, Transform root, int order = -5)
-        {
-            GameObject bgObj = new GameObject("PreviewBackground");
-            if (root != null) bgObj.transform.SetParent(root, false);
-            bgObj.transform.localPosition = position;
-            
-            SpriteRenderer sr = bgObj.AddComponent<SpriteRenderer>();
-            if (gridBackground != null)
-            {
-                sr.sprite = gridBackground.sprite;
-            }
-            sr.color = color;
-            sr.sortingOrder = order;
-            
-            bgObj.transform.localScale = new Vector3(size.x, size.y, 1f);
-            
-            spawnedViews.Add(bgObj.AddComponent<BlockCellView>());
-        }
-
         private void SpawnCell(BlockCellInfo cell, Color? tintOverride, Transform overrideRoot = null)
         {
             if (cellPrefab == null)
@@ -195,140 +117,12 @@ namespace GraviTrix.Runtime
             Transform root = overrideRoot != null ? overrideRoot : (boardRoot != null ? boardRoot : transform);
             BlockCellView view = Instantiate(cellPrefab, root);
             view.gameObject.SetActive(true);
-            float x = cell.Position.x * cellSize + cachedBoardOffset.x;
-            float y = -cell.Position.y * cellSize + cachedBoardOffset.y;
+            float x = cell.Position.x * cellSize + boardOffset.x;
+            float y = -cell.Position.y * cellSize + boardOffset.y;
             view.transform.localPosition = new Vector3(x, y, 0f);
             view.SetCell(cell, tintOverride);
 
-            if (cell.VisualType == BlockVisualType.Slippery)
-            {
-                var sr = view.GetComponent<SpriteRenderer>();
-                if (sr != null) 
-                {
-                    if (skinLibrary != null && skinLibrary.BlockRemoved != null)
-                    {
-                        sr.sprite = skinLibrary.BlockRemoved;
-                    }
-#if UNITY_EDITOR
-                    else if (sr.sprite == null)
-                    {
-                        sr.sprite = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/Blocks/block_removed.png");
-                    }
-#endif
-                    if (tintOverride == null) sr.color = Color.white;
-                }
-            }
-
             spawnedViews.Add(view);
-        }
-
-        private void UpdateDynamicCellSize(BoardGrid board)
-        {
-            Camera cam = Camera.main;
-            if (cam == null || board == null) return;
-
-            float screenHeight = 2f * cam.orthographicSize;
-            float screenWidth = screenHeight * cam.aspect;
-
-            float maxCellWidth = (screenWidth * 0.95f) / board.Width;
-            float availableHeightRatio = cam.aspect < 1f ? 0.65f : 0.95f; 
-            float maxCellHeight = (screenHeight * availableHeightRatio) / (board.Height + 6f);
-
-            cellSize = Mathf.Min(maxCellWidth, maxCellHeight);
-        }
-
-        private Vector2 ComputeBoardOffset(BoardGrid board)
-        {
-            if (!autoCenterBoard || board == null)
-            {
-                return manualBoardOffset;
-            }
-
-            float centeredX = -((board.Width - 1) * cellSize * 0.5f);
-            float centeredY = ((board.Height - 1) * cellSize * 0.5f);
-
-            Camera cam = Camera.main;
-            if (cam != null && cam.aspect < 1f)
-            {
-                float topScreenY = cam.transform.position.y + cam.orthographicSize;
-                float margin = cellSize; 
-                
-                centeredY = topScreenY - margin - (6.5f * cellSize);
-            }
-
-            return new Vector2(centeredX, centeredY) + manualBoardOffset;
-        }
-
-        private void RenderGridBackground(BoardGrid board)
-        {
-            if (gridRoot == null)
-            {
-                gridRoot = new GameObject("BackgroundGrid");
-                gridRoot.transform.SetParent(boardRoot != null ? boardRoot : transform);
-                gridRoot.transform.localPosition = new Vector3(0, 0, 10f);
-
-                GameObject bgObj = new GameObject("GridBackgroundQuad");
-                bgObj.transform.SetParent(gridRoot.transform);
-                gridBackground = bgObj.AddComponent<SpriteRenderer>();
-                gridBackground.sprite = whiteSprite;
-                gridBackground.color = new Color(0.15f, 0.15f, 0.15f, 1f); // Koyu gri (Dark Gray) arka plan
-                gridBackground.sortingOrder = -20;
-            }
-
-            int expectedLines = board.Width + 1 + board.Height + 1;
-            while (gridLines.Count < expectedLines)
-            {
-                GameObject lineObj = new GameObject($"GridLine_{gridLines.Count}");
-                lineObj.transform.SetParent(gridRoot.transform);
-                LineRenderer lr = lineObj.AddComponent<LineRenderer>();
-                lr.material = new Material(Shader.Find("Sprites/Default"));
-                Color gridLineColor = new Color(0.4f, 0.4f, 0.4f, 0.5f); // Gray
-                lr.startColor = gridLineColor;
-                lr.endColor = gridLineColor;
-                lr.sortingOrder = -10;
-                lr.useWorldSpace = false;
-                gridLines.Add(lr);
-            }
-
-            float width = board.Width * cellSize;
-            float height = board.Height * cellSize;
-            
-            float centerX = cachedBoardOffset.x + (width * 0.5f) - (cellSize * 0.5f);
-            float centerY = cachedBoardOffset.y - (height * 0.5f) + (cellSize * 0.5f);
-
-            gridBackground.transform.localPosition = new Vector3(centerX, centerY, 0f);
-            gridBackground.transform.localScale = new Vector3(width, height, 1f);
-
-            float pixelSize = Camera.main != null ? (2f * Camera.main.orthographicSize) / Screen.height : 0.01f;
-            float lineWidth = Mathf.Max(cellSize * 0.03f, pixelSize * 1.2f); // Ensures lines are at least ~1.2 pixels thick to prevent vanishing
-
-            int lineIndex = 0;
-
-            for (int x = 0; x <= board.Width; x++)
-            {
-                float xPos = x * cellSize + cachedBoardOffset.x - (cellSize * 0.5f);
-                float yTop = cachedBoardOffset.y + (cellSize * 0.5f);
-                float yBottom = -board.Height * cellSize + cachedBoardOffset.y + (cellSize * 0.5f);
-
-                LineRenderer lr = gridLines[lineIndex++];
-                lr.startWidth = lineWidth;
-                lr.endWidth = lineWidth;
-                lr.SetPosition(0, new Vector3(xPos, yTop, 0f));
-                lr.SetPosition(1, new Vector3(xPos, yBottom, 0f));
-            }
-
-            for (int y = 0; y <= board.Height; y++)
-            {
-                float yPos = -y * cellSize + cachedBoardOffset.y + (cellSize * 0.5f);
-                float xLeft = cachedBoardOffset.x - (cellSize * 0.5f);
-                float xRight = board.Width * cellSize + cachedBoardOffset.x - (cellSize * 0.5f);
-
-                LineRenderer lr = gridLines[lineIndex++];
-                lr.startWidth = lineWidth;
-                lr.endWidth = lineWidth;
-                lr.SetPosition(0, new Vector3(xLeft, yPos, 0f));
-                lr.SetPosition(1, new Vector3(xRight, yPos, 0f));
-            }
         }
 
         private void ClearViews()
@@ -351,43 +145,27 @@ namespace GraviTrix.Runtime
 
         private IEnumerator ClearAnimationCoroutine(List<BlockCellInfo> cells, float duration)
         {
-            List<BlockCellView> animatingViews = new List<BlockCellView>();
+            List<SpriteRenderer> animatingViews = new List<SpriteRenderer>();
             List<Vector3> basePositions = new List<Vector3>();
             List<Vector3> scatterOffsets = new List<Vector3>();
             List<float> spinSpeeds = new List<float>();
 
+            // Shard look (sprite, colour, sorting) comes from the prefab; motion is animated here.
+            Transform root = boardRoot != null ? boardRoot : transform;
+            Color baseColor = clearShardPrefab.color;
+
             foreach (BlockCellInfo cell in cells)
             {
-                if (cellPrefab == null) continue;
-                Transform root = boardRoot != null ? boardRoot : transform;
-                BlockCellView view = Instantiate(cellPrefab, root);
-                view.gameObject.SetActive(true);
-                float x = cell.Position.x * cellSize + cachedBoardOffset.x;
-                float y = -cell.Position.y * cellSize + cachedBoardOffset.y;
+                float x = cell.Position.x * cellSize + boardOffset.x;
+                float y = -cell.Position.y * cellSize + boardOffset.y;
                 Vector3 pos = new Vector3(x, y, 0f);
-                view.transform.localPosition = pos;
-                view.SetCell(cell, null);
-                
-                SpriteRenderer sr = view.GetComponent<SpriteRenderer>();
-                if (sr != null) 
-                {
-                    sr.sortingOrder = 10;
-                    if (skinLibrary != null && skinLibrary.BlockRemoved != null)
-                    {
-                        sr.sprite = skinLibrary.BlockRemoved;
-                    }
-#if UNITY_EDITOR
-                    else if (sr.sprite == null)
-                    {
-                        sr.sprite = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/Blocks/block_removed.png");
-                    }
-#endif
-                    sr.color = Color.white;
-                }
-                
-                animatingViews.Add(view);
+
+                SpriteRenderer shard = Instantiate(clearShardPrefab, root);
+                shard.transform.localPosition = pos;
+
+                animatingViews.Add(shard);
                 basePositions.Add(pos);
-                
+
                 Vector3 randomDir = new Vector3(UnityEngine.Random.Range(-1f, 1f), UnityEngine.Random.Range(-0.2f, 1.5f), 0f).normalized;
                 scatterOffsets.Add(randomDir * UnityEngine.Random.Range(1.5f, 4f) * cellSize);
                 spinSpeeds.Add(UnityEngine.Random.Range(-700f, 700f));
@@ -395,7 +173,7 @@ namespace GraviTrix.Runtime
 
             float elapsed = 0f;
             Vector3 originalScale = Vector3.one;
-            
+
             while (elapsed < duration)
             {
                 elapsed += Time.deltaTime;
@@ -403,52 +181,45 @@ namespace GraviTrix.Runtime
 
                 for (int i = 0; i < animatingViews.Count; i++)
                 {
-                    BlockCellView view = animatingViews[i];
-                    if (view == null) continue;
+                    SpriteRenderer sr = animatingViews[i];
+                    if (sr == null) continue;
 
+                    Transform view = sr.transform;
                     Vector3 basePos = basePositions[i];
                     Vector3 scatterOffset = scatterOffsets[i];
                     float spin = spinSpeeds[i];
-                    SpriteRenderer sr = view.GetComponent<SpriteRenderer>();
 
                     if (t < 0.25f)
                     {
                         float localT = t / 0.25f;
                         float scale = Mathf.Lerp(1f, 1.4f, EaseOutBack(localT));
-                        view.transform.localScale = originalScale * scale;
-                        view.transform.localPosition = basePos;
-                        
-                        if (sr != null)
-                        {
-                            sr.color = Color.Lerp(Color.white, new Color(1f, 0.9f, 0.4f, 1f), localT);
-                        }
+                        view.localScale = originalScale * scale;
+                        view.localPosition = basePos;
+                        sr.color = Color.Lerp(baseColor, new Color(1f, 0.9f, 0.4f, 1f), localT);
                     }
                     else
                     {
                         float localT = (t - 0.25f) / 0.75f;
                         float moveEaseT = 1f - Mathf.Pow(1f - localT, 3f);
-                        
+
                         float scale = Mathf.Lerp(1.4f, 0f, localT * localT);
-                        view.transform.localScale = originalScale * scale;
-                        view.transform.localPosition = basePos + scatterOffset * moveEaseT;
-                        view.transform.localRotation = Quaternion.Euler(0, 0, spin * moveEaseT);
-                        
-                        if (sr != null)
-                        {
-                            Color c = sr.color;
-                            c.a = Mathf.Lerp(1f, 0f, localT);
-                            sr.color = c;
-                        }
+                        view.localScale = originalScale * scale;
+                        view.localPosition = basePos + scatterOffset * moveEaseT;
+                        view.localRotation = Quaternion.Euler(0, 0, spin * moveEaseT);
+
+                        Color c = sr.color;
+                        c.a = Mathf.Lerp(1f, 0f, localT);
+                        sr.color = c;
                     }
                 }
                 yield return null;
             }
 
-            foreach (BlockCellView view in animatingViews)
+            foreach (SpriteRenderer sr in animatingViews)
             {
-                if (view != null)
+                if (sr != null)
                 {
-                    Destroy(view.gameObject);
+                    Destroy(sr.gameObject);
                 }
             }
         }
@@ -465,58 +236,45 @@ namespace GraviTrix.Runtime
             List<Vector3> scatterOffsets = new List<Vector3>();
             List<float> spinSpeeds = new List<float>();
 
-            // Cloud explosion overlay instead of flashbang
-            GameObject flashObj = new GameObject("BombCloud");
-            flashObj.transform.SetParent(boardRoot != null ? boardRoot : transform, false);
-            SpriteRenderer flashSr = flashObj.AddComponent<SpriteRenderer>();
-            
-            if (skinLibrary != null && skinLibrary.BlockRemoved != null)
-            {
-                flashSr.sprite = skinLibrary.BlockRemoved;
-            }
-#if UNITY_EDITOR
-            else
-            {
-                flashSr.sprite = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/Blocks/block_removed.png");
-            }
-#endif
+            Transform root = boardRoot != null ? boardRoot : transform;
 
-            flashSr.sortingOrder = 20;
-            flashSr.color = new Color(0.2f, 0.2f, 0.2f, 0f); // Dark smoke color
-            flashObj.transform.localScale = new Vector3(5f, 5f, 1f); // Start small, grow big
+            // Smoke cloud: sprite, colour and sorting come from the prefab; growth and fade are animated here.
+            SpriteRenderer cloud = Instantiate(bombCloudPrefab, root);
+            Color cloudColor = cloud.color;
+            cloud.color = new Color(cloudColor.r, cloudColor.g, cloudColor.b, 0f);
+            cloud.transform.localScale = new Vector3(5f, 5f, 1f); // Start small, grow big
 
             foreach (BlockCellInfo cell in cells)
             {
                 if (cellPrefab == null) continue;
-                Transform root = boardRoot != null ? boardRoot : transform;
                 BlockCellView view = Instantiate(cellPrefab, root);
                 view.gameObject.SetActive(true);
-                float x = cell.Position.x * cellSize + cachedBoardOffset.x;
-                float y = -cell.Position.y * cellSize + cachedBoardOffset.y;
+                float x = cell.Position.x * cellSize + boardOffset.x;
+                float y = -cell.Position.y * cellSize + boardOffset.y;
                 Vector3 pos = new Vector3(x, y, 0f);
                 view.transform.localPosition = pos;
                 view.SetCell(cell, null);
-                
+
                 SpriteRenderer sr = view.GetComponent<SpriteRenderer>();
-                if (sr != null) 
+                if (sr != null)
                 {
                     sr.sortingOrder = 15;
                     // Random mix of orange/fire and dark smoke
                     sr.color = UnityEngine.Random.value > 0.5f ? new Color(1f, 0.4f, 0f, 1f) : new Color(0.3f, 0.3f, 0.3f, 1f);
                 }
-                
+
                 animatingViews.Add(view);
                 basePositions.Add(pos);
-                
+
                 Vector3 randomDir = new Vector3(UnityEngine.Random.Range(-1f, 1f), UnityEngine.Random.Range(-1f, 1f), 0f).normalized;
-                scatterOffsets.Add(randomDir * UnityEngine.Random.Range(8f, 20f) * cellSize); 
+                scatterOffsets.Add(randomDir * UnityEngine.Random.Range(8f, 20f) * cellSize);
                 spinSpeeds.Add(UnityEngine.Random.Range(-800f, 800f));
             }
 
             float elapsed = 0f;
             Vector3 originalScale = Vector3.one;
-            
-            Transform targetToShake = boardRoot != null ? boardRoot : transform;
+
+            Transform targetToShake = root;
             Vector3 originalTargetPos = targetToShake.localPosition;
 
             while (elapsed < duration)
@@ -529,14 +287,14 @@ namespace GraviTrix.Runtime
                 Vector3 shakeOffset = new Vector3(UnityEngine.Random.Range(-1f, 1f), UnityEngine.Random.Range(-1f, 1f), 0f) * shakeIntensity;
                 targetToShake.localPosition = originalTargetPos + shakeOffset;
 
-                if (flashSr != null)
+                if (cloud != null)
                 {
                     // Cloud expands and fades
                     float cloudT = 1f - Mathf.Pow(1f - t, 3f);
-                    flashObj.transform.localScale = Vector3.Lerp(new Vector3(5f, 5f, 1f), new Vector3(40f, 40f, 1f), cloudT);
-                    
+                    cloud.transform.localScale = Vector3.Lerp(new Vector3(5f, 5f, 1f), new Vector3(40f, 40f, 1f), cloudT);
+
                     float alpha = t < 0.2f ? t / 0.2f : 1f - ((t - 0.2f) / 0.8f);
-                    flashSr.color = new Color(0.15f, 0.15f, 0.15f, alpha * 0.8f); // Dark smoke
+                    cloud.color = new Color(cloudColor.r, cloudColor.g, cloudColor.b, alpha * cloudColor.a);
                 }
 
                 for (int i = 0; i < animatingViews.Count; i++)
@@ -549,13 +307,13 @@ namespace GraviTrix.Runtime
                     float spin = spinSpeeds[i];
                     SpriteRenderer sr = view.GetComponent<SpriteRenderer>();
 
-                    float moveEaseT = 1f - Mathf.Pow(1f - t, 3f); 
-                    
+                    float moveEaseT = 1f - Mathf.Pow(1f - t, 3f);
+
                     float scale = Mathf.Lerp(1.2f, 0f, t * t);
                     view.transform.localScale = originalScale * scale;
                     view.transform.localPosition = basePos + scatterOffset * moveEaseT;
                     view.transform.localRotation = Quaternion.Euler(0, 0, spin * moveEaseT);
-                    
+
                     if (sr != null)
                     {
                         Color c = sr.color;
@@ -568,7 +326,7 @@ namespace GraviTrix.Runtime
 
             targetToShake.localPosition = originalTargetPos;
 
-            if (flashObj != null) Destroy(flashObj);
+            if (cloud != null) Destroy(cloud.gameObject);
 
             foreach (BlockCellView view in animatingViews)
             {
@@ -583,8 +341,9 @@ namespace GraviTrix.Runtime
 
         private IEnumerator ExtinguishAnimationCoroutine(List<BlockCellInfo> cells, float duration)
         {
+            if (cellPrefab == null) yield break;
+
             List<BlockCellView> animatingViews = new List<BlockCellView>();
-            List<ParticleSystem> particles = new List<ParticleSystem>();
 
             foreach (BlockCellInfo cell in cells)
             {
@@ -594,60 +353,17 @@ namespace GraviTrix.Runtime
                 view.SetCell(cell, null);
 
                 Vector3 targetPos = new Vector3(
-                    cell.Position.x * cellSize + cachedBoardOffset.x,
-                    -cell.Position.y * cellSize + cachedBoardOffset.y,
-                    -1f // slightly in front to cover the real metal block seamlessly
+                    cell.Position.x * cellSize + boardOffset.x,
+                    -cell.Position.y * cellSize + boardOffset.y,
+                    -1f // slightly in front to cover the obsidian block underneath
                 );
 
                 view.transform.localPosition = targetPos;
                 animatingViews.Add(view);
 
-                // Create a simple smoke particle system
-                GameObject smokeObj = new GameObject("SmokeEffect");
-                smokeObj.transform.parent = boardRoot;
-                smokeObj.transform.localPosition = targetPos;
-                ParticleSystem ps = smokeObj.AddComponent<ParticleSystem>();
-                
-                ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
-                
-                var main = ps.main;
-                main.duration = duration;
-                main.startLifetime = 1f;
-                main.startSpeed = 0.5f;
-                main.startSize = cellSize * 0.4f;
-                main.startColor = new ParticleSystem.MinMaxGradient(new Color(0.6f, 0.6f, 0.6f, 0.7f), new Color(0.8f, 0.8f, 0.8f, 0.4f));
-                main.loop = false;
-                main.playOnAwake = false;
-
-                var emission = ps.emission;
-                emission.rateOverTime = 20;
-
-                var shape = ps.shape;
-                shape.shapeType = ParticleSystemShapeType.Box;
-                shape.scale = new Vector3(cellSize, cellSize, 1f);
-
-                // Add size over lifetime to disperse
-                var sizeOverLifetime = ps.sizeOverLifetime;
-                sizeOverLifetime.enabled = true;
-                sizeOverLifetime.size = new ParticleSystem.MinMaxCurve(1.0f, 2.0f);
-
-                // Add color over lifetime to fade out
-                var colorOverLifetime = ps.colorOverLifetime;
-                colorOverLifetime.enabled = true;
-                Gradient grad = new Gradient();
-                grad.SetKeys(
-                    new GradientColorKey[] { new GradientColorKey(Color.white, 0.0f), new GradientColorKey(Color.white, 1.0f) },
-                    new GradientAlphaKey[] { new GradientAlphaKey(1.0f, 0.0f), new GradientAlphaKey(0.0f, 1.0f) }
-                );
-                colorOverLifetime.color = grad;
-
-                var renderer = ps.GetComponent<ParticleSystemRenderer>();
-                renderer.sortingOrder = 10;
-                renderer.material = new Material(Shader.Find("Sprites/Default"));
-
-                ps.Play();
-                particles.Add(ps);
-                Destroy(smokeObj, duration + 1.5f);
+                // Smoke puff: configured in the prefab, plays on spawn and destroys itself when finished.
+                ParticleSystem smoke = Instantiate(smokePrefab, boardRoot);
+                smoke.transform.localPosition = targetPos;
             }
 
             float elapsed = 0f;
@@ -658,7 +374,7 @@ namespace GraviTrix.Runtime
                 elapsed += Time.deltaTime;
                 float normalizedTime = Mathf.Clamp01(elapsed / duration);
 
-                // We'll fade the overlay block's alpha from 1 to 0, smoothly exposing the real metal block behind it
+                // Fade the lava overlay's alpha from 1 to 0, exposing the obsidian block behind it
                 Color fadeColor = new Color(lavaColor.r, lavaColor.g, lavaColor.b, 1f - normalizedTime);
 
                 for (int i = 0; i < animatingViews.Count; i++)
@@ -705,8 +421,8 @@ namespace GraviTrix.Runtime
                 
                 BlockCellView view = Instantiate(cellPrefab, root);
                 view.gameObject.SetActive(true);
-                float x = cell.Position.x * cellSize + cachedBoardOffset.x;
-                float y = -cell.Position.y * cellSize + cachedBoardOffset.y;
+                float x = cell.Position.x * cellSize + boardOffset.x;
+                float y = -cell.Position.y * cellSize + boardOffset.y;
                 Vector3 pos = new Vector3(x, y, 0f);
                 view.transform.localPosition = pos;
                 view.SetCell(cell, null);
@@ -907,7 +623,7 @@ namespace GraviTrix.Runtime
             float angle = isLeft ? 90f : -90f;
             Quaternion targetRotation = originalRotation * Quaternion.Euler(0, 0, angle);
 
-            Vector3 pivotLocal = new Vector3(0f, cachedBoardOffset.y - 5.5f * cellSize, 0f);
+            Vector3 pivotLocal = new Vector3(0f, boardOffset.y - 5.5f * cellSize, 0f);
             Vector3 pivotParentSpace = originalLocalPos + originalRotation * Vector3.Scale(originalScale, pivotLocal);
 
             // Flash the grid background during rotation
@@ -1046,18 +762,18 @@ namespace GraviTrix.Runtime
 
             foreach (var movement in slideMovements)
             {
-                float toX = movement.To.x * cellSize + cachedBoardOffset.x;
-                float toY = -movement.To.y * cellSize + cachedBoardOffset.y;
+                float toX = movement.To.x * cellSize + boardOffset.x;
+                float toY = -movement.To.y * cellSize + boardOffset.y;
                 Vector3 targetPos = new Vector3(toX, toY, 0f);
 
-                float fromX = movement.From.x * cellSize + cachedBoardOffset.x;
-                float fromY = -movement.From.y * cellSize + cachedBoardOffset.y;
+                float fromX = movement.From.x * cellSize + boardOffset.x;
+                float fromY = -movement.From.y * cellSize + boardOffset.y;
                 Vector3 startPos = new Vector3(fromX, fromY, 0f);
 
                 BlockCellView matchedView = null;
                 foreach (var view in spawnedViews)
                 {
-                    if (view != null && Vector3.Distance(view.transform.localPosition, targetPos) < 0.01f)
+                    if (view != null && view.transform.parent == boardRoot && Vector3.Distance(view.transform.localPosition, targetPos) < 0.01f)
                     {
                         matchedView = view;
                         break;
@@ -1117,8 +833,6 @@ namespace GraviTrix.Runtime
             {
                 if (view != null && view.transform.parent == targetRoot)
                 {
-                    if (view.gameObject.name == "PreviewBackground") continue;
-                    if (view.GetComponent<TextMesh>() != null) continue;
                     
                     var sr = view.GetComponent<SpriteRenderer>();
                     if (sr != null)
@@ -1234,7 +948,7 @@ namespace GraviTrix.Runtime
                     b.transform.localPosition += vel * Time.deltaTime;
                     b.transform.localRotation *= Quaternion.Euler(0, 0, rotationalVels[i] * Time.deltaTime);
 
-                    if (b.transform.localPosition.y < cachedBoardOffset.y - (30f * cellSize))
+                    if (b.transform.localPosition.y < boardOffset.y - (30f * cellSize))
                     {
                         Destroy(b.gameObject);
                         fallingBlocks.RemoveAt(i);

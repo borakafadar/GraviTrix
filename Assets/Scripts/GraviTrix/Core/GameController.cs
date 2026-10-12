@@ -41,6 +41,8 @@ namespace GraviTrix.Core
         private HashSet<Vector2Int> hiddenCells = new HashSet<Vector2Int>();
         private bool pendingIsRotation;
         private int rescueCooldown;
+        private bool batchMeltEffects;
+        private readonly List<BlockCellInfo> batchedMeltCells = new List<BlockCellInfo>();
 
         public int Score => score;
         public GamePhase Phase => phase;
@@ -202,9 +204,14 @@ namespace GraviTrix.Core
                 return;
             }
 
+            // Collect lava melts over the whole drop so they play as one effect and one sound.
+            batchMeltEffects = true;
             while (TryAdvancePiece(DownVector))
             {
             }
+            batchMeltEffects = false;
+            PlayMeltEffects(batchedMeltCells);
+            batchedMeltCells.Clear();
 
             LockActivePiece();
         }
@@ -394,16 +401,33 @@ namespace GraviTrix.Core
                 
                 board.ClearCells(cellsToClear);
                 score += cellsToClear.Count * (config != null ? config.LavaMeltScore : pointsPerBlock);
-                
-                if (boardView != null)
-                {
-                    boardView.PlayMeltAnimation(cellsToAnimate, 0.5f);
-                }
 
-                if (SfxManager.Instance != null)
+                if (batchMeltEffects)
                 {
-                    SfxManager.Instance.PlayLavaMelt();
+                    batchedMeltCells.AddRange(cellsToAnimate);
                 }
+                else
+                {
+                    PlayMeltEffects(cellsToAnimate);
+                }
+            }
+        }
+
+        private void PlayMeltEffects(List<BlockCellInfo> meltedCells)
+        {
+            if (meltedCells.Count == 0)
+            {
+                return;
+            }
+
+            if (boardView != null)
+            {
+                boardView.PlayMeltAnimation(new List<BlockCellInfo>(meltedCells), 0.5f);
+            }
+
+            if (SfxManager.Instance != null)
+            {
+                SfxManager.Instance.PlayLavaMelt();
             }
         }
 
