@@ -204,13 +204,14 @@ namespace GraviTrix.Core
                 return;
             }
 
-            // Collect lava melts over the whole drop so they play as one effect and one sound.
+            // Collect lava melts over the whole drop so they play as one effect. The melt sound is
+            // left to LockActivePiece, which always plays it for a lava piece, so it isn't doubled.
             batchMeltEffects = true;
             while (TryAdvancePiece(DownVector))
             {
             }
             batchMeltEffects = false;
-            PlayMeltEffects(batchedMeltCells);
+            PlayMeltEffects(batchedMeltCells, playSound: false);
             batchedMeltCells.Clear();
 
             LockActivePiece();
@@ -413,7 +414,7 @@ namespace GraviTrix.Core
             }
         }
 
-        private void PlayMeltEffects(List<BlockCellInfo> meltedCells)
+        private void PlayMeltEffects(List<BlockCellInfo> meltedCells, bool playSound = true)
         {
             if (meltedCells.Count == 0)
             {
@@ -425,7 +426,7 @@ namespace GraviTrix.Core
                 boardView.PlayMeltAnimation(new List<BlockCellInfo>(meltedCells), 0.5f);
             }
 
-            if (SfxManager.Instance != null)
+            if (playSound && SfxManager.Instance != null)
             {
                 SfxManager.Instance.PlayLavaMelt();
             }
