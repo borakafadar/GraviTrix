@@ -15,6 +15,7 @@ namespace GraviTrix.Runtime
         [SerializeField] private bool autoCenterBoard = true;
         [SerializeField] private Vector2 manualBoardOffset = Vector2.zero;
         [SerializeField] private BlockSkinLibrary skinLibrary;
+        [SerializeField] private Sprite whiteSprite;
 
         private readonly List<BlockCellView> spawnedViews = new List<BlockCellView>();
         private Vector2 cachedBoardOffset;
@@ -269,11 +270,7 @@ namespace GraviTrix.Runtime
                 GameObject bgObj = new GameObject("GridBackgroundQuad");
                 bgObj.transform.SetParent(gridRoot.transform);
                 gridBackground = bgObj.AddComponent<SpriteRenderer>();
-                
-                Texture2D tex = new Texture2D(1, 1);
-                tex.SetPixel(0, 0, Color.white);
-                tex.Apply();
-                gridBackground.sprite = Sprite.Create(tex, new Rect(0, 0, 1, 1), new Vector2(0.5f, 0.5f), 1f);
+                gridBackground.sprite = whiteSprite;
                 gridBackground.color = new Color(0.15f, 0.15f, 0.15f, 1f); // Koyu gri (Dark Gray) arka plan
                 gridBackground.sortingOrder = -20;
             }

@@ -76,12 +76,8 @@ namespace GraviTrix.UI
                     Image fillImage = rotationProgressBar.fillRect.GetComponent<Image>();
                     if (fillImage != null)
                     {
-                        // Use a solid white texture so we can color it dynamically
-                        Texture2D whiteTex = new Texture2D(1, 1);
-                        whiteTex.SetPixel(0, 0, Color.white);
-                        whiteTex.Apply();
-                        Sprite whiteSprite = Sprite.Create(whiteTex, new Rect(0, 0, 1, 1), new Vector2(0.5f, 0.5f));
-                        fillImage.sprite = whiteSprite;
+                        // No sprite = solid white, so we can color it dynamically
+                        fillImage.sprite = null;
                         fillImage.color = new Color(0.2f, 0.85f, 0.3f); // Initial green
                         fillImage.type = Image.Type.Simple;
                     }
