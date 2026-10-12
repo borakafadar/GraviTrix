@@ -2,27 +2,25 @@ using UnityEngine;
 
 /// <summary>
 /// Singleton SFX manager that persists across scenes.
-/// Loads sound effect clips from Resources/SoundEffects and plays them on demand.
+/// Lives on the AudioManagers prefab; the AudioSource and clips are assigned in the Inspector.
 /// Volume is controlled via the Options SFX slider (PlayerPrefs).
 /// </summary>
 public class SfxManager : MonoBehaviour
 {
     public static SfxManager Instance { get; private set; }
 
-    private AudioSource audioSource;
-
     private const string SfxVolumeKey = "SfxVolume";
 
-    // --- Existing sound effects (loaded from Resources) ---
-    private AudioClip blockDropClip;
-    private AudioClip gravityChangeClip;
-    private AudioClip metalBlockClip;
+    [SerializeField] private AudioSource audioSource;
 
-    // --- Placeholder sound effects (user will add mp3 files later) ---
-    private AudioClip lavaMeltClip;
-    private AudioClip lineClearClip;
-    private AudioClip gameOverClip;
-    private AudioClip bombExplosionClip;
+    [Header("Clips")]
+    [SerializeField] private AudioClip blockDropClip;
+    [SerializeField] private AudioClip gravityChangeClip;
+    [SerializeField] private AudioClip metalBlockClip;
+    [SerializeField] private AudioClip lavaMeltClip;
+    [SerializeField] private AudioClip lineClearClip;
+    [SerializeField] private AudioClip gameOverClip;
+    [SerializeField] private AudioClip bombExplosionClip;
 
     private void Awake()
     {
@@ -35,29 +33,7 @@ public class SfxManager : MonoBehaviour
         Instance = this;
         DontDestroyOnLoad(gameObject);
 
-        audioSource = gameObject.AddComponent<AudioSource>();
-        audioSource.loop = false;
-        audioSource.playOnAwake = false;
-        audioSource.spatialBlend = 0f; // 2D sound
-
-        float savedVolume = PlayerPrefs.GetFloat(SfxVolumeKey, 0.8f);
-        audioSource.volume = savedVolume;
-
-        LoadClips();
-    }
-
-    private void LoadClips()
-    {
-        // Existing sound effects
-        blockDropClip = Resources.Load<AudioClip>("SoundEffects/block_drop");
-        gravityChangeClip = Resources.Load<AudioClip>("SoundEffects/gravity_change_sound");
-        metalBlockClip = Resources.Load<AudioClip>("SoundEffects/metal_block_sound");
-
-        // Placeholder sound effects — user will add these mp3 files to Resources/SoundEffects/
-        lavaMeltClip = Resources.Load<AudioClip>("SoundEffects/lava_melt_sound");
-        lineClearClip = Resources.Load<AudioClip>("SoundEffects/line_clear_sound");
-        gameOverClip = Resources.Load<AudioClip>("SoundEffects/game_over");
-        bombExplosionClip = Resources.Load<AudioClip>("SoundEffects/explosion_sound");
+        audioSource.volume = PlayerPrefs.GetFloat(SfxVolumeKey, 0.8f);
     }
 
     // ==================== Public play methods ====================
@@ -149,11 +125,11 @@ public class SfxManager : MonoBehaviour
 
     private void PlayClip(AudioClip clip)
     {
-        if (clip == null || audioSource == null)
+        if (clip == null)
         {
             return;
         }
 
-        audioSource.PlayOneShot(clip, audioSource.volume);
+        audioSource.PlayOneShot(clip);
     }
 }
