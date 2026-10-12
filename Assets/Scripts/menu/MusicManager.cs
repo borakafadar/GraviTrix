@@ -2,17 +2,15 @@ using UnityEngine;
 
 /// <summary>
 /// Singleton music manager that persists across scenes.
-/// Plays the background music and allows volume control via PlayerPrefs.
+/// Lives on the AudioManagers prefab; the AudioSource and clip are assigned in the Inspector.
 /// </summary>
 public class MusicManager : MonoBehaviour
 {
     public static MusicManager Instance { get; private set; }
 
-    private AudioSource audioSource;
-
     private const string MusicVolumeKey = "MusicVolume";
 
-    [Header("Music Clip (assigned at runtime if not set)")]
+    [SerializeField] private AudioSource audioSource;
     [SerializeField] private AudioClip musicClip;
 
     private void Awake()
@@ -26,39 +24,12 @@ public class MusicManager : MonoBehaviour
         Instance = this;
         DontDestroyOnLoad(gameObject);
 
-        audioSource = gameObject.AddComponent<AudioSource>();
-        audioSource.loop = true;
-        audioSource.playOnAwake = false;
-        audioSource.spatialBlend = 0f; // 2D sound
-
-        float savedVolume = PlayerPrefs.GetFloat(MusicVolumeKey, 0.8f);
-        audioSource.volume = savedVolume;
+        audioSource.volume = PlayerPrefs.GetFloat(MusicVolumeKey, 0.8f);
     }
 
     private void Start()
     {
-        if (audioSource.isPlaying)
-        {
-            return;
-        }
-
-        if (musicClip != null)
-        {
-            PlayMusic(musicClip);
-        }
-        else
-        {
-            // Fallback: load from Resources/Music folder
-            AudioClip clip = Resources.Load<AudioClip>("Music/The_Final_Row");
-            if (clip != null)
-            {
-                PlayMusic(clip);
-            }
-            else
-            {
-                Debug.LogWarning("[MusicManager] Could not find music clip in Resources/Music/The_Final_Row");
-            }
-        }
+        PlayMusic(musicClip);
     }
 
     /// <summary>
@@ -86,10 +57,7 @@ public class MusicManager : MonoBehaviour
     /// </summary>
     public void SetVolume(float volume)
     {
-        if (audioSource != null)
-        {
-            audioSource.volume = volume;
-        }
+        audioSource.volume = volume;
     }
 
     /// <summary>
@@ -97,6 +65,6 @@ public class MusicManager : MonoBehaviour
     /// </summary>
     public float GetVolume()
     {
-        return audioSource != null ? audioSource.volume : 0.8f;
+        return audioSource.volume;
     }
 }
