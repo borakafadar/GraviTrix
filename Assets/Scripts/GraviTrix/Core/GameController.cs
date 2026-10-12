@@ -784,17 +784,6 @@ namespace GraviTrix.Core
 
             hudView.SetScore(score);
 
-            string stateLabel = phase switch
-            {
-                GamePhase.Falling => "Falling",
-                GamePhase.RotatingBoard => "Rotating",
-                GamePhase.ClearingLines => "Clearing",
-                GamePhase.GameOver => "Game Over",
-                _ => "Spawning"
-            };
-
-            hudView.SetState(stateLabel);
-
             if (phase == GamePhase.RotatingBoard)
             {
                 hudView.SetRotationProgress(1f, 0, !isBoardRotated, movesBeforeRotationTarget);
