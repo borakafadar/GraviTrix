@@ -14,6 +14,9 @@ namespace GraviTrix.UI
         [SerializeField] private Sprite rightSprite;
         [SerializeField] private Sprite holdSprite;
 
+        [Header("Target")]
+        [SerializeField] private Canvas canvas;
+
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void AutoInitialize()
         {
@@ -36,10 +39,9 @@ namespace GraviTrix.UI
                 Debug.LogWarning("Could not find GameInputRelay in the scene. Buttons will not be functional until connected.");
             }
 
-            Canvas canvas = FindObjectOfType<Canvas>();
             if (canvas == null)
             {
-                Debug.LogError("No Canvas found in the scene to place the buttons!");
+                Debug.LogError("MobileControlsView: assign the target Canvas in the Inspector.");
                 return;
             }
 
@@ -81,7 +83,6 @@ namespace GraviTrix.UI
         {
             if (Application.isPlaying)
             {
-                Canvas canvas = FindObjectOfType<Canvas>();
                 if (canvas != null && canvas.transform.Find("MobileControls") == null)
                 {
                     GenerateButtons();
