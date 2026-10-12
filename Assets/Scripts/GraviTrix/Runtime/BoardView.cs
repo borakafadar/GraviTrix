@@ -15,12 +15,16 @@ namespace GraviTrix.Runtime
         [Tooltip("Local position of the top-left cell (0,0) under BoardRoot.")]
         [SerializeField] private Vector2 boardOffset = new Vector2(-1.986111f, 2.2916667f);
         [SerializeField] private Color activePieceTint = new Color(1f, 1f, 1f, 0.9f);
-        [SerializeField] private BlockSkinLibrary skinLibrary;
 
         [Header("Scene Objects")]
         [SerializeField] private SpriteRenderer gridBackground;
         [SerializeField] private Transform holdPreviewAnchor;
         [SerializeField] private Transform nextPreviewAnchor;
+
+        [Header("Effect Prefabs")]
+        [SerializeField] private SpriteRenderer clearShardPrefab;
+        [SerializeField] private SpriteRenderer bombCloudPrefab;
+        [SerializeField] private ParticleSystem smokePrefab;
 
         private readonly List<BlockCellView> spawnedViews = new List<BlockCellView>();
 
@@ -118,25 +122,6 @@ namespace GraviTrix.Runtime
             view.transform.localPosition = new Vector3(x, y, 0f);
             view.SetCell(cell, tintOverride);
 
-            if (cell.VisualType == BlockVisualType.Slippery)
-            {
-                var sr = view.GetComponent<SpriteRenderer>();
-                if (sr != null) 
-                {
-                    if (skinLibrary != null && skinLibrary.BlockRemoved != null)
-                    {
-                        sr.sprite = skinLibrary.BlockRemoved;
-                    }
-#if UNITY_EDITOR
-                    else if (sr.sprite == null)
-                    {
-                        sr.sprite = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/Blocks/block_removed.png");
-                    }
-#endif
-                    if (tintOverride == null) sr.color = Color.white;
-                }
-            }
-
             spawnedViews.Add(view);
         }
 
@@ -160,43 +145,27 @@ namespace GraviTrix.Runtime
 
         private IEnumerator ClearAnimationCoroutine(List<BlockCellInfo> cells, float duration)
         {
-            List<BlockCellView> animatingViews = new List<BlockCellView>();
+            List<SpriteRenderer> animatingViews = new List<SpriteRenderer>();
             List<Vector3> basePositions = new List<Vector3>();
             List<Vector3> scatterOffsets = new List<Vector3>();
             List<float> spinSpeeds = new List<float>();
 
+            // Shard look (sprite, colour, sorting) comes from the prefab; motion is animated here.
+            Transform root = boardRoot != null ? boardRoot : transform;
+            Color baseColor = clearShardPrefab.color;
+
             foreach (BlockCellInfo cell in cells)
             {
-                if (cellPrefab == null) continue;
-                Transform root = boardRoot != null ? boardRoot : transform;
-                BlockCellView view = Instantiate(cellPrefab, root);
-                view.gameObject.SetActive(true);
                 float x = cell.Position.x * cellSize + boardOffset.x;
                 float y = -cell.Position.y * cellSize + boardOffset.y;
                 Vector3 pos = new Vector3(x, y, 0f);
-                view.transform.localPosition = pos;
-                view.SetCell(cell, null);
-                
-                SpriteRenderer sr = view.GetComponent<SpriteRenderer>();
-                if (sr != null) 
-                {
-                    sr.sortingOrder = 10;
-                    if (skinLibrary != null && skinLibrary.BlockRemoved != null)
-                    {
-                        sr.sprite = skinLibrary.BlockRemoved;
-                    }
-#if UNITY_EDITOR
-                    else if (sr.sprite == null)
-                    {
-                        sr.sprite = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/Blocks/block_removed.png");
-                    }
-#endif
-                    sr.color = Color.white;
-                }
-                
-                animatingViews.Add(view);
+
+                SpriteRenderer shard = Instantiate(clearShardPrefab, root);
+                shard.transform.localPosition = pos;
+
+                animatingViews.Add(shard);
                 basePositions.Add(pos);
-                
+
                 Vector3 randomDir = new Vector3(UnityEngine.Random.Range(-1f, 1f), UnityEngine.Random.Range(-0.2f, 1.5f), 0f).normalized;
                 scatterOffsets.Add(randomDir * UnityEngine.Random.Range(1.5f, 4f) * cellSize);
                 spinSpeeds.Add(UnityEngine.Random.Range(-700f, 700f));
@@ -204,7 +173,7 @@ namespace GraviTrix.Runtime
 
             float elapsed = 0f;
             Vector3 originalScale = Vector3.one;
-            
+
             while (elapsed < duration)
             {
                 elapsed += Time.deltaTime;
@@ -212,52 +181,45 @@ namespace GraviTrix.Runtime
 
                 for (int i = 0; i < animatingViews.Count; i++)
                 {
-                    BlockCellView view = animatingViews[i];
-                    if (view == null) continue;
+                    SpriteRenderer sr = animatingViews[i];
+                    if (sr == null) continue;
 
+                    Transform view = sr.transform;
                     Vector3 basePos = basePositions[i];
                     Vector3 scatterOffset = scatterOffsets[i];
                     float spin = spinSpeeds[i];
-                    SpriteRenderer sr = view.GetComponent<SpriteRenderer>();
 
                     if (t < 0.25f)
                     {
                         float localT = t / 0.25f;
                         float scale = Mathf.Lerp(1f, 1.4f, EaseOutBack(localT));
-                        view.transform.localScale = originalScale * scale;
-                        view.transform.localPosition = basePos;
-                        
-                        if (sr != null)
-                        {
-                            sr.color = Color.Lerp(Color.white, new Color(1f, 0.9f, 0.4f, 1f), localT);
-                        }
+                        view.localScale = originalScale * scale;
+                        view.localPosition = basePos;
+                        sr.color = Color.Lerp(baseColor, new Color(1f, 0.9f, 0.4f, 1f), localT);
                     }
                     else
                     {
                         float localT = (t - 0.25f) / 0.75f;
                         float moveEaseT = 1f - Mathf.Pow(1f - localT, 3f);
-                        
+
                         float scale = Mathf.Lerp(1.4f, 0f, localT * localT);
-                        view.transform.localScale = originalScale * scale;
-                        view.transform.localPosition = basePos + scatterOffset * moveEaseT;
-                        view.transform.localRotation = Quaternion.Euler(0, 0, spin * moveEaseT);
-                        
-                        if (sr != null)
-                        {
-                            Color c = sr.color;
-                            c.a = Mathf.Lerp(1f, 0f, localT);
-                            sr.color = c;
-                        }
+                        view.localScale = originalScale * scale;
+                        view.localPosition = basePos + scatterOffset * moveEaseT;
+                        view.localRotation = Quaternion.Euler(0, 0, spin * moveEaseT);
+
+                        Color c = sr.color;
+                        c.a = Mathf.Lerp(1f, 0f, localT);
+                        sr.color = c;
                     }
                 }
                 yield return null;
             }
 
-            foreach (BlockCellView view in animatingViews)
+            foreach (SpriteRenderer sr in animatingViews)
             {
-                if (view != null)
+                if (sr != null)
                 {
-                    Destroy(view.gameObject);
+                    Destroy(sr.gameObject);
                 }
             }
         }
@@ -274,30 +236,17 @@ namespace GraviTrix.Runtime
             List<Vector3> scatterOffsets = new List<Vector3>();
             List<float> spinSpeeds = new List<float>();
 
-            // Cloud explosion overlay instead of flashbang
-            GameObject flashObj = new GameObject("BombCloud");
-            flashObj.transform.SetParent(boardRoot != null ? boardRoot : transform, false);
-            SpriteRenderer flashSr = flashObj.AddComponent<SpriteRenderer>();
-            
-            if (skinLibrary != null && skinLibrary.BlockRemoved != null)
-            {
-                flashSr.sprite = skinLibrary.BlockRemoved;
-            }
-#if UNITY_EDITOR
-            else
-            {
-                flashSr.sprite = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/Blocks/block_removed.png");
-            }
-#endif
+            Transform root = boardRoot != null ? boardRoot : transform;
 
-            flashSr.sortingOrder = 20;
-            flashSr.color = new Color(0.2f, 0.2f, 0.2f, 0f); // Dark smoke color
-            flashObj.transform.localScale = new Vector3(5f, 5f, 1f); // Start small, grow big
+            // Smoke cloud: sprite, colour and sorting come from the prefab; growth and fade are animated here.
+            SpriteRenderer cloud = Instantiate(bombCloudPrefab, root);
+            Color cloudColor = cloud.color;
+            cloud.color = new Color(cloudColor.r, cloudColor.g, cloudColor.b, 0f);
+            cloud.transform.localScale = new Vector3(5f, 5f, 1f); // Start small, grow big
 
             foreach (BlockCellInfo cell in cells)
             {
                 if (cellPrefab == null) continue;
-                Transform root = boardRoot != null ? boardRoot : transform;
                 BlockCellView view = Instantiate(cellPrefab, root);
                 view.gameObject.SetActive(true);
                 float x = cell.Position.x * cellSize + boardOffset.x;
@@ -305,27 +254,27 @@ namespace GraviTrix.Runtime
                 Vector3 pos = new Vector3(x, y, 0f);
                 view.transform.localPosition = pos;
                 view.SetCell(cell, null);
-                
+
                 SpriteRenderer sr = view.GetComponent<SpriteRenderer>();
-                if (sr != null) 
+                if (sr != null)
                 {
                     sr.sortingOrder = 15;
                     // Random mix of orange/fire and dark smoke
                     sr.color = UnityEngine.Random.value > 0.5f ? new Color(1f, 0.4f, 0f, 1f) : new Color(0.3f, 0.3f, 0.3f, 1f);
                 }
-                
+
                 animatingViews.Add(view);
                 basePositions.Add(pos);
-                
+
                 Vector3 randomDir = new Vector3(UnityEngine.Random.Range(-1f, 1f), UnityEngine.Random.Range(-1f, 1f), 0f).normalized;
-                scatterOffsets.Add(randomDir * UnityEngine.Random.Range(8f, 20f) * cellSize); 
+                scatterOffsets.Add(randomDir * UnityEngine.Random.Range(8f, 20f) * cellSize);
                 spinSpeeds.Add(UnityEngine.Random.Range(-800f, 800f));
             }
 
             float elapsed = 0f;
             Vector3 originalScale = Vector3.one;
-            
-            Transform targetToShake = boardRoot != null ? boardRoot : transform;
+
+            Transform targetToShake = root;
             Vector3 originalTargetPos = targetToShake.localPosition;
 
             while (elapsed < duration)
@@ -338,14 +287,14 @@ namespace GraviTrix.Runtime
                 Vector3 shakeOffset = new Vector3(UnityEngine.Random.Range(-1f, 1f), UnityEngine.Random.Range(-1f, 1f), 0f) * shakeIntensity;
                 targetToShake.localPosition = originalTargetPos + shakeOffset;
 
-                if (flashSr != null)
+                if (cloud != null)
                 {
                     // Cloud expands and fades
                     float cloudT = 1f - Mathf.Pow(1f - t, 3f);
-                    flashObj.transform.localScale = Vector3.Lerp(new Vector3(5f, 5f, 1f), new Vector3(40f, 40f, 1f), cloudT);
-                    
+                    cloud.transform.localScale = Vector3.Lerp(new Vector3(5f, 5f, 1f), new Vector3(40f, 40f, 1f), cloudT);
+
                     float alpha = t < 0.2f ? t / 0.2f : 1f - ((t - 0.2f) / 0.8f);
-                    flashSr.color = new Color(0.15f, 0.15f, 0.15f, alpha * 0.8f); // Dark smoke
+                    cloud.color = new Color(cloudColor.r, cloudColor.g, cloudColor.b, alpha * cloudColor.a);
                 }
 
                 for (int i = 0; i < animatingViews.Count; i++)
@@ -358,13 +307,13 @@ namespace GraviTrix.Runtime
                     float spin = spinSpeeds[i];
                     SpriteRenderer sr = view.GetComponent<SpriteRenderer>();
 
-                    float moveEaseT = 1f - Mathf.Pow(1f - t, 3f); 
-                    
+                    float moveEaseT = 1f - Mathf.Pow(1f - t, 3f);
+
                     float scale = Mathf.Lerp(1.2f, 0f, t * t);
                     view.transform.localScale = originalScale * scale;
                     view.transform.localPosition = basePos + scatterOffset * moveEaseT;
                     view.transform.localRotation = Quaternion.Euler(0, 0, spin * moveEaseT);
-                    
+
                     if (sr != null)
                     {
                         Color c = sr.color;
@@ -377,7 +326,7 @@ namespace GraviTrix.Runtime
 
             targetToShake.localPosition = originalTargetPos;
 
-            if (flashObj != null) Destroy(flashObj);
+            if (cloud != null) Destroy(cloud.gameObject);
 
             foreach (BlockCellView view in animatingViews)
             {
@@ -392,8 +341,9 @@ namespace GraviTrix.Runtime
 
         private IEnumerator ExtinguishAnimationCoroutine(List<BlockCellInfo> cells, float duration)
         {
+            if (cellPrefab == null) yield break;
+
             List<BlockCellView> animatingViews = new List<BlockCellView>();
-            List<ParticleSystem> particles = new List<ParticleSystem>();
 
             foreach (BlockCellInfo cell in cells)
             {
@@ -405,58 +355,15 @@ namespace GraviTrix.Runtime
                 Vector3 targetPos = new Vector3(
                     cell.Position.x * cellSize + boardOffset.x,
                     -cell.Position.y * cellSize + boardOffset.y,
-                    -1f // slightly in front to cover the real metal block seamlessly
+                    -1f // slightly in front to cover the obsidian block underneath
                 );
 
                 view.transform.localPosition = targetPos;
                 animatingViews.Add(view);
 
-                // Create a simple smoke particle system
-                GameObject smokeObj = new GameObject("SmokeEffect");
-                smokeObj.transform.parent = boardRoot;
-                smokeObj.transform.localPosition = targetPos;
-                ParticleSystem ps = smokeObj.AddComponent<ParticleSystem>();
-                
-                ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
-                
-                var main = ps.main;
-                main.duration = duration;
-                main.startLifetime = 1f;
-                main.startSpeed = 0.5f;
-                main.startSize = cellSize * 0.4f;
-                main.startColor = new ParticleSystem.MinMaxGradient(new Color(0.6f, 0.6f, 0.6f, 0.7f), new Color(0.8f, 0.8f, 0.8f, 0.4f));
-                main.loop = false;
-                main.playOnAwake = false;
-
-                var emission = ps.emission;
-                emission.rateOverTime = 20;
-
-                var shape = ps.shape;
-                shape.shapeType = ParticleSystemShapeType.Box;
-                shape.scale = new Vector3(cellSize, cellSize, 1f);
-
-                // Add size over lifetime to disperse
-                var sizeOverLifetime = ps.sizeOverLifetime;
-                sizeOverLifetime.enabled = true;
-                sizeOverLifetime.size = new ParticleSystem.MinMaxCurve(1.0f, 2.0f);
-
-                // Add color over lifetime to fade out
-                var colorOverLifetime = ps.colorOverLifetime;
-                colorOverLifetime.enabled = true;
-                Gradient grad = new Gradient();
-                grad.SetKeys(
-                    new GradientColorKey[] { new GradientColorKey(Color.white, 0.0f), new GradientColorKey(Color.white, 1.0f) },
-                    new GradientAlphaKey[] { new GradientAlphaKey(1.0f, 0.0f), new GradientAlphaKey(0.0f, 1.0f) }
-                );
-                colorOverLifetime.color = grad;
-
-                var renderer = ps.GetComponent<ParticleSystemRenderer>();
-                renderer.sortingOrder = 10;
-                renderer.material = new Material(Shader.Find("Sprites/Default"));
-
-                ps.Play();
-                particles.Add(ps);
-                Destroy(smokeObj, duration + 1.5f);
+                // Smoke puff: configured in the prefab, plays on spawn and destroys itself when finished.
+                ParticleSystem smoke = Instantiate(smokePrefab, boardRoot);
+                smoke.transform.localPosition = targetPos;
             }
 
             float elapsed = 0f;
@@ -467,7 +374,7 @@ namespace GraviTrix.Runtime
                 elapsed += Time.deltaTime;
                 float normalizedTime = Mathf.Clamp01(elapsed / duration);
 
-                // We'll fade the overlay block's alpha from 1 to 0, smoothly exposing the real metal block behind it
+                // Fade the lava overlay's alpha from 1 to 0, exposing the obsidian block behind it
                 Color fadeColor = new Color(lavaColor.r, lavaColor.g, lavaColor.b, 1f - normalizedTime);
 
                 for (int i = 0; i < animatingViews.Count; i++)

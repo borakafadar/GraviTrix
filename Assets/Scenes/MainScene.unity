@@ -602,10 +602,12 @@ MonoBehaviour:
   cellSize: 0.3611111
   boardOffset: {x: -1.986111, y: 2.2916667}
   activePieceTint: {r: 1, g: 1, b: 1, a: 0.9}
-  skinLibrary: {fileID: 0}
   gridBackground: {fileID: 1144615116}
   holdPreviewAnchor: {fileID: 917914095}
   nextPreviewAnchor: {fileID: 509876129}
+  clearShardPrefab: {fileID: 427150678454499322, guid: 6908295a1081dab42a3d4d7ca81d87b7, type: 3}
+  bombCloudPrefab: {fileID: 6086495841638925074, guid: e5b5801f8a253864cb3a90829f614dd7, type: 3}
+  smokePrefab: {fileID: 2327517856658110649, guid: afc10994a01dea44c87ca7987124aac8, type: 3}
 --- !u!1 &180584504
 GameObject:
   m_ObjectHideFlags: 0
@@ -1205,7 +1207,7 @@ MonoBehaviour:
   m_spriteAsset: {fileID: 0}
   m_tintAllSprites: 0
   m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: 0
+  m_TextStyleHashCode: -1183493901
   m_overrideHtmlColors: 0
   m_faceColor:
     serializedVersion: 2
@@ -4302,7 +4304,7 @@ MonoBehaviour:
   m_spriteAsset: {fileID: 0}
   m_tintAllSprites: 0
   m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: 0
+  m_TextStyleHashCode: -1183493901
   m_overrideHtmlColors: 0
   m_faceColor:
     serializedVersion: 2
