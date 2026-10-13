@@ -42,6 +42,7 @@ namespace GraviTrix.Core
         private bool pendingIsRotation;
         private int rescueCooldown;
         private bool batchMeltEffects;
+        private bool isNewRecord;
         private readonly List<BlockCellInfo> batchedMeltCells = new List<BlockCellInfo>();
 
         public int Score => score;
@@ -117,6 +118,9 @@ namespace GraviTrix.Core
 
         public void RestartGame()
         {
+            // Stop the old game's animations first, so their completion callbacks
+            // (rotation -> drop -> slide -> spawn, game over -> popup) never reach the new game.
+            if (boardView != null) boardView.ResetView();
             Time.timeScale = 1f;
             if (gameOverPopup != null) gameOverPopup.Hide();
             board.Clear();
@@ -830,6 +834,7 @@ namespace GraviTrix.Core
             if (phase == GamePhase.GameOver) return;
 
             phase = GamePhase.GameOver;
+            isNewRecord = gameOverPopup != null && gameOverPopup.SaveHighScore(score);
             if (SfxManager.Instance != null) SfxManager.Instance.PlayGameOver();
             activePiece = null;
             UpdateHud();
@@ -849,7 +854,7 @@ namespace GraviTrix.Core
         {
             if (gameOverPopup != null)
             {
-                gameOverPopup.Show(score);
+                gameOverPopup.Show(score, isNewRecord);
             }
         }
 

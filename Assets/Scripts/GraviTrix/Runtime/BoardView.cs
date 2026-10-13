@@ -28,6 +28,46 @@ namespace GraviTrix.Runtime
 
         private readonly List<BlockCellView> spawnedViews = new List<BlockCellView>();
 
+        // BoardRoot transform and grid colour as authored in the scene, restored by ResetView.
+        private Vector3 rootPosition;
+        private Quaternion rootRotation;
+        private Vector3 rootScale;
+        private Color gridColor;
+
+        private void Awake()
+        {
+            rootPosition = boardRoot.localPosition;
+            rootRotation = boardRoot.localRotation;
+            rootScale = boardRoot.localScale;
+            gridColor = gridBackground.color;
+        }
+
+        /// <summary>
+        /// Stops every running animation without firing its completion callback, puts BoardRoot and
+        /// the grid back to their authored state, and removes cells and leftover effect objects.
+        /// Called on restart so the old game's animations can't touch the new one.
+        /// </summary>
+        public void ResetView()
+        {
+            StopAllCoroutines();
+
+            boardRoot.localPosition = rootPosition;
+            boardRoot.localRotation = rootRotation;
+            boardRoot.localScale = rootScale;
+            gridBackground.color = gridColor;
+
+            Transform grid = gridBackground.transform.parent;
+            foreach (Transform child in boardRoot)
+            {
+                if (child != grid)
+                {
+                    Destroy(child.gameObject);
+                }
+            }
+
+            spawnedViews.Clear();
+        }
+
         public void Render(BoardGrid board, PieceInstance activePiece, PieceInstance nextPiece, PieceInstance heldPiece, HashSet<Vector2Int> hiddenCells = null)
         {
             ClearViews();

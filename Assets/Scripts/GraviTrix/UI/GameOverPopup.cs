@@ -23,19 +23,25 @@ namespace GraviTrix.UI
         [SerializeField] private GameObject newRecordText;
 
         /// <summary>
-        /// Show the game over popup with the given final score.
+        /// Save the score as the new high score if it beats it. Called as soon as the game ends,
+        /// so the run counts even if the player restarts before the popup appears.
         /// </summary>
-        public void Show(int finalScore)
+        public bool SaveHighScore(int finalScore)
         {
-            // Update & check high score
-            int highScore = PlayerPrefs.GetInt(HighScoreKey, 0);
-            bool isNewRecord = finalScore > highScore;
+            bool isNewRecord = finalScore > PlayerPrefs.GetInt(HighScoreKey, 0);
             if (isNewRecord)
             {
                 PlayerPrefs.SetInt(HighScoreKey, finalScore);
                 PlayerPrefs.Save();
             }
+            return isNewRecord;
+        }
 
+        /// <summary>
+        /// Show the game over popup with the given final score.
+        /// </summary>
+        public void Show(int finalScore, bool isNewRecord)
+        {
             scoreValueText.text = finalScore.ToString("N0");
             newRecordText.SetActive(isNewRecord);
 
