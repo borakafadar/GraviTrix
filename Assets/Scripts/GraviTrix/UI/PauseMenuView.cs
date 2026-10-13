@@ -38,6 +38,10 @@ namespace GraviTrix.UI
 
         private void PauseGame()
         {
+            // Esc or the pause button during game over would open the pause popup behind the
+            // game-over popup and keep it up after Retry.
+            if (gameController.Phase == GamePhase.GameOver) return;
+
             isPaused = true; Time.timeScale = 0f;
 
             musicVolumeSlider.SetValueWithoutNotify(PlayerPrefs.GetFloat(MusicVolumeKey, 0.8f));
