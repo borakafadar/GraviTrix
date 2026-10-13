@@ -14,6 +14,10 @@ namespace GraviTrix.Runtime
         private Vector2 touchStartPosition;
         private float touchStartTime;
 
+        // Every keyboard, touch and mobile-button action goes through this, so nothing reaches
+        // the game while it is paused (PauseMenuView pauses by setting timeScale to 0).
+        private GameController Active => Time.timeScale == 0f ? null : controller;
+
         private void Update()
         {
             ReadKeyboardInput();
@@ -22,42 +26,42 @@ namespace GraviTrix.Runtime
 
         public void OnMoveLeft()
         {
-            controller?.MoveLeft();
+            Active?.MoveLeft();
         }
 
         public void OnMoveRight()
         {
-            controller?.MoveRight();
+            Active?.MoveRight();
         }
 
         public void OnRotateLeft()
         {
-            controller?.RotatePieceLeft();
+            Active?.RotatePieceLeft();
         }
 
         public void OnRotateRight()
         {
-            controller?.RotatePieceRight();
+            Active?.RotatePieceRight();
         }
 
         public void OnHoldPiece()
         {
-            controller?.HoldPiece();
+            Active?.HoldPiece();
         }
 
         public void OnSoftDrop()
         {
-            controller?.SoftDrop();
+            Active?.SoftDrop();
         }
 
         public void OnHardDrop()
         {
-            controller?.HardDrop();
+            Active?.HardDrop();
         }
 
         public void OnRestart()
         {
-            controller?.RestartGame();
+            Active?.RestartGame();
         }
 
         private void ReadKeyboardInput()
@@ -70,47 +74,47 @@ namespace GraviTrix.Runtime
 
             if (keyboard.aKey.wasPressedThisFrame || keyboard.leftArrowKey.wasPressedThisFrame)
             {
-                controller?.MoveLeft();
+                Active?.MoveLeft();
             }
 
             if (keyboard.dKey.wasPressedThisFrame || keyboard.rightArrowKey.wasPressedThisFrame)
             {
-                controller?.MoveRight();
+                Active?.MoveRight();
             }
 
             if (keyboard.qKey.wasPressedThisFrame)
             {
-                controller?.RotatePieceLeft();
+                Active?.RotatePieceLeft();
             }
 
             if (keyboard.eKey.wasPressedThisFrame)
             {
-                controller?.RotatePieceRight();
+                Active?.RotatePieceRight();
             }
 
             if (keyboard.wKey.wasPressedThisFrame || keyboard.upArrowKey.wasPressedThisFrame)
             {
-                controller?.RotatePieceLeft();
+                Active?.RotatePieceLeft();
             }
 
             if (keyboard.sKey.wasPressedThisFrame || keyboard.downArrowKey.wasPressedThisFrame)
             {
-                controller?.SoftDrop();
+                Active?.SoftDrop();
             }
 
             if (keyboard.enterKey.wasPressedThisFrame)
             {
-                controller?.HardDrop();
+                Active?.HardDrop();
             }
 
             if (keyboard.rKey.wasPressedThisFrame)
             {
-                controller?.RestartGame();
+                Active?.RestartGame();
             }
 
             if (keyboard.cKey.wasPressedThisFrame || keyboard.leftShiftKey.wasPressedThisFrame || keyboard.spaceKey.wasPressedThisFrame)
             {
-                controller?.HoldPiece();
+                Active?.HoldPiece();
             }
         }
 
@@ -151,7 +155,7 @@ namespace GraviTrix.Runtime
 
             if (swipeDelta.magnitude < swipeThreshold && duration <= tapRotateMaxDuration)
             {
-                controller?.RotatePieceLeft();
+                Active?.RotatePieceLeft();
                 return;
             }
 
@@ -159,20 +163,20 @@ namespace GraviTrix.Runtime
             {
                 if (swipeDelta.x < 0f)
                 {
-                    controller?.MoveLeft();
+                    Active?.MoveLeft();
                 }
                 else
                 {
-                    controller?.MoveRight();
+                    Active?.MoveRight();
                 }
             }
             else if (swipeDelta.y < 0f)
             {
-                controller?.SoftDrop();
+                Active?.SoftDrop();
             }
             else
             {
-                controller?.HardDrop();
+                Active?.HardDrop();
             }
         }
     }
