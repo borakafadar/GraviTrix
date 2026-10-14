@@ -8,12 +8,14 @@ namespace GraviTrix.Core
         private readonly Vector2Int pivot;
         private readonly List<BlockCellState> cells;
         private readonly List<BlockCellState> originalCells;
+        private readonly bool rotatable = true;
 
-        public PieceInstance(Vector2Int origin, Vector2Int pivot, IEnumerable<BlockCellState> runtimeCells)
+        public PieceInstance(Vector2Int origin, Vector2Int pivot, IEnumerable<BlockCellState> runtimeCells, bool rotatable = true)
         {
             Definition = null;
             Origin = origin;
             this.pivot = pivot;
+            this.rotatable = rotatable;
             cells = new List<BlockCellState>();
             originalCells = new List<BlockCellState>();
 
@@ -117,6 +119,11 @@ namespace GraviTrix.Core
 
         private bool TryRotate(BoardGrid board, bool rotateLeft)
         {
+            if (!rotatable)
+            {
+                return false;
+            }
+
             List<BlockCellInfo> rotatedCells = new List<BlockCellInfo>(cells.Count);
 
             for (int index = 0; index < cells.Count; index++)
