@@ -9,11 +9,13 @@ namespace GraviTrix.Core
         {
             public Vector2Int Pivot;
             public BlockCellState[] Cells;
+            public bool Rotatable;
 
-            public Template(Vector2Int pivot, BlockCellState[] cells)
+            public Template(Vector2Int pivot, BlockCellState[] cells, bool rotatable = true)
             {
                 Pivot = pivot;
                 Cells = cells;
+                Rotatable = rotatable;
             }
         }
 
@@ -38,7 +40,7 @@ namespace GraviTrix.Core
                     Cell(1, 0, BlockKind.Normal, BlockVisualType.Yellow),
                     Cell(0, 1, BlockKind.Normal, BlockVisualType.Yellow),
                     Cell(1, 1, BlockKind.Normal, BlockVisualType.Yellow)
-                }),
+                }, rotatable: false), // a square looks the same rotated; the corner pivot would only shift it
             // T
             new Template(
                 new Vector2Int(0, 0),
@@ -105,7 +107,7 @@ namespace GraviTrix.Core
                     Cell(1, 0, BlockKind.Lava, BlockVisualType.Lava),
                     Cell(0, 1, BlockKind.Lava, BlockVisualType.Lava),
                     Cell(1, 1, BlockKind.Lava, BlockVisualType.Lava)
-                }),
+                }, rotatable: false),
             // Special: metal single cell
             new Template(
                 new Vector2Int(0, 0),
@@ -147,24 +149,32 @@ namespace GraviTrix.Core
                         BlockVisualType.Slippery
                     );
                 }
-                return new PieceInstance(origin, selected.Pivot, slipperyCells);
+                return Build(selected, origin, slipperyCells);
             }
 
-            return new PieceInstance(origin, selected.Pivot, selected.Cells);
+            return Build(selected, origin, selected.Cells);
         }
 
         public static PieceInstance CreateLava(Vector2Int origin)
         {
-            if (Templates.Length <= 8) return null;
-            Template selected = Templates[8]; // Index 8 is the 2x2 Lava piece
-            return new PieceInstance(origin, selected.Pivot, selected.Cells);
+            return CreateFromTemplate(8, origin); // Index 8 is the 2x2 Lava piece
         }
 
         public static PieceInstance CreateMetal(Vector2Int origin)
         {
-            if (Templates.Length <= 9) return null;
-            Template selected = Templates[9]; // Index 9 is the metal single cell
-            return new PieceInstance(origin, selected.Pivot, selected.Cells);
+            return CreateFromTemplate(9, origin); // Index 9 is the metal single cell
+        }
+
+        // Also used by the EditMode tests to build a specific piece.
+        private static PieceInstance CreateFromTemplate(int index, Vector2Int origin)
+        {
+            if (index >= Templates.Length) return null;
+            return Build(Templates[index], origin, Templates[index].Cells);
+        }
+
+        private static PieceInstance Build(Template template, Vector2Int origin, BlockCellState[] cells)
+        {
+            return new PieceInstance(origin, template.Pivot, cells, template.Rotatable);
         }
 
         private static BlockCellState Cell(int x, int y, BlockKind kind, BlockVisualType visual)

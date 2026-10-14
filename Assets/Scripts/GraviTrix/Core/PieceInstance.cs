@@ -8,12 +8,14 @@ namespace GraviTrix.Core
         private readonly Vector2Int pivot;
         private readonly List<BlockCellState> cells;
         private readonly List<BlockCellState> originalCells;
+        private readonly bool rotatable = true;
 
-        public PieceInstance(Vector2Int origin, Vector2Int pivot, IEnumerable<BlockCellState> runtimeCells)
+        public PieceInstance(Vector2Int origin, Vector2Int pivot, IEnumerable<BlockCellState> runtimeCells, bool rotatable = true)
         {
             Definition = null;
             Origin = origin;
             this.pivot = pivot;
+            this.rotatable = rotatable;
             cells = new List<BlockCellState>();
             originalCells = new List<BlockCellState>();
 
@@ -117,22 +119,12 @@ namespace GraviTrix.Core
 
         private bool TryRotate(BoardGrid board, bool rotateLeft)
         {
-            List<BlockCellInfo> rotatedCells = new List<BlockCellInfo>(cells.Count);
-
-            for (int index = 0; index < cells.Count; index++)
-            {
-                BlockCellState cell = cells[index];
-                Vector2Int rotatedLocalPosition = rotateLeft
-                    ? RotateLeftAroundPivot(cell.LocalPosition, pivot)
-                    : RotateRightAroundPivot(cell.LocalPosition, pivot);
-
-                rotatedCells.Add(new BlockCellInfo(Origin + rotatedLocalPosition, cell.Kind, cell.VisualType));
-            }
-
-            if (!board.CanOccupy(rotatedCells))
+            if (!rotatable)
             {
                 return false;
             }
+
+            List<BlockCellState> rotated = new List<BlockCellState>(cells.Count);
 
             for (int index = 0; index < cells.Count; index++)
             {
@@ -140,10 +132,38 @@ namespace GraviTrix.Core
                 cell.LocalPosition = rotateLeft
                     ? RotateLeftAroundPivot(cell.LocalPosition, pivot)
                     : RotateRightAroundPivot(cell.LocalPosition, pivot);
-                cells[index] = cell;
+                rotated.Add(cell);
             }
 
-            return true;
+            // If the rotated piece doesn't fit where it is, try nudging it sideways or down.
+            foreach (Vector2Int kick in RotationKicks)
+            {
+                if (board.CanOccupy(CellsAt(rotated, Origin + kick)))
+                {
+                    cells.Clear();
+                    cells.AddRange(rotated);
+                    Origin += kick;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        // Tried in order. Downward kicks let pieces rotate on the spawn row, where turning pushes
+        // cells above the board (I needs two rows). There are no upward kicks, so rotating can never
+        // lift a piece or keep it from falling.
+        private static readonly Vector2Int[] RotationKicks =
+        {
+            new Vector2Int(0, 0), new Vector2Int(-1, 0), new Vector2Int(1, 0), new Vector2Int(0, 1), new Vector2Int(0, 2)
+        };
+
+        private static IEnumerable<BlockCellInfo> CellsAt(List<BlockCellState> localCells, Vector2Int origin)
+        {
+            foreach (BlockCellState cell in localCells)
+            {
+                yield return new BlockCellInfo(origin + cell.LocalPosition, cell.Kind, cell.VisualType);
+            }
         }
 
         public IEnumerable<BlockCellInfo> GetWorldCellsAtOrigin(Vector2Int origin)
