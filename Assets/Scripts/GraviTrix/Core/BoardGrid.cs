@@ -21,10 +21,17 @@ namespace GraviTrix.Core
         public int Width => width;
         public int Height => height;
 
-        public List<BlockCellInfo> LastExtinguished = new List<BlockCellInfo>();
+        private readonly List<BlockCellInfo> lastExtinguished = new List<BlockCellInfo>();
 
+        // Lava cells turned to obsidian by the most recent placement, row clear or rotation.
+        public IReadOnlyList<BlockCellInfo> LastExtinguished => lastExtinguished;
+
+        // Also used by both rotate methods before they rebuild the board, so an empty-board
+        // rotation leaves LastExtinguished empty too.
         public void Clear()
         {
+            lastExtinguished.Clear();
+
             for (int x = 0; x < width; x++)
             {
                 for (int y = 0; y < height; y++)
@@ -369,7 +376,7 @@ namespace GraviTrix.Core
 
         private void ExtinguishLavaAtBottom()
         {
-            LastExtinguished.Clear();
+            lastExtinguished.Clear();
             int bottomY = height - 1;
             List<Vector2Int> lavaToExtinguish = new List<Vector2Int>();
             
@@ -399,7 +406,7 @@ namespace GraviTrix.Core
                 while (queue.Count > 0)
                 {
                     Vector2Int current = queue.Dequeue();
-                    LastExtinguished.Add(new BlockCellInfo
+                    lastExtinguished.Add(new BlockCellInfo
                     {
                         Position = current,
                         Kind = occupants[current.x, current.y].Kind,
@@ -491,14 +498,7 @@ namespace GraviTrix.Core
 
         public void ClearAll()
         {
-            for (int x = 0; x < width; x++)
-            {
-                for (int y = 0; y < height; y++)
-                {
-                    occupied[x, y] = false;
-                    occupants[x, y] = default(CellOccupant);
-                }
-            }
+            Clear();
         }
     }
 }

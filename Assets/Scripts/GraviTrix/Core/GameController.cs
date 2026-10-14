@@ -466,7 +466,8 @@ namespace GraviTrix.Core
             lastPlacedPieceCells.Clear();
             foreach(var c in cells) lastPlacedPieceCells.Add(c);
 
-            board.TryPlace(lastPlacedPieceCells);
+            bool placed = board.TryPlace(lastPlacedPieceCells);
+            Debug.Assert(placed, "LockActivePiece: the active piece overlaps the board; its cells were not placed.");
             activePiece = null;
 
             if (board.LastExtinguished.Count > 0)
@@ -529,7 +530,10 @@ namespace GraviTrix.Core
                     hudView.ShowActionText("GOOD!");
                 }
 
-                boardView.PlayClearAnimation(cellsToAnimate, 0.4f);
+                if (boardView != null)
+                {
+                    boardView.PlayClearAnimation(cellsToAnimate, 0.4f);
+                }
                 UpdateHud();
                 RefreshViews();
                 return;

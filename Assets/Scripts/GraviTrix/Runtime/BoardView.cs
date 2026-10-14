@@ -376,7 +376,7 @@ namespace GraviTrix.Runtime
             }
         }
 
-        public void PlayExtinguishAnimation(List<BlockCellInfo> cellsToAnimate, float duration)
+        public void PlayExtinguishAnimation(IReadOnlyList<BlockCellInfo> cellsToAnimate, float duration)
         {
             StartCoroutine(ExtinguishAnimationCoroutine(new List<BlockCellInfo>(cellsToAnimate), duration));
         }
@@ -884,7 +884,12 @@ namespace GraviTrix.Runtime
                 }
             }
 
-            if (blocksToAnimate.Count == 0) yield break;
+            if (blocksToAnimate.Count == 0)
+            {
+                // Nothing to animate (empty board): still finish, or the game-over popup never appears.
+                onComplete?.Invoke();
+                yield break;
+            }
 
             // Flash red phase
             float flashDuration = 1.2f;
