@@ -118,6 +118,12 @@ namespace GraviTrix.Runtime
             }
         }
 
+        private static bool IsOverUI(UnityEngine.InputSystem.Controls.TouchControl touch)
+        {
+            var eventSystem = UnityEngine.EventSystems.EventSystem.current;
+            return eventSystem != null && eventSystem.IsPointerOverGameObject(touch.touchId.ReadValue());
+        }
+
         private void ReadTouchInput()
         {
             Touchscreen touchscreen = Touchscreen.current;
@@ -131,8 +137,7 @@ namespace GraviTrix.Runtime
             if (touch.press.wasPressedThisFrame)
             {
                 // Ignore touch if it's over a UI element (like our mobile buttons)
-                if (UnityEngine.EventSystems.EventSystem.current != null && 
-                    UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject(touch.touchId.ReadValue()))
+                if (IsOverUI(touch))
                 {
                     return;
                 }
@@ -152,6 +157,14 @@ namespace GraviTrix.Runtime
             float duration = Time.unscaledTime - touchStartTime;
 
             touchActive = false;
+
+            // Check again on release: if this script ever updates before the EventSystem (order -1000),
+            // the press-frame check misses a new touch on a button, and the tap would also rotate.
+            // The UI module keeps a touch's pointer for one frame after release, so this check holds.
+            if (IsOverUI(touch))
+            {
+                return;
+            }
 
             if (swipeDelta.magnitude < swipeThreshold && duration <= tapRotateMaxDuration)
             {
