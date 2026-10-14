@@ -376,7 +376,7 @@ namespace GraviTrix.Runtime
             }
         }
 
-        public void PlayExtinguishAnimation(List<BlockCellInfo> cellsToAnimate, float duration)
+        public void PlayExtinguishAnimation(IReadOnlyList<BlockCellInfo> cellsToAnimate, float duration)
         {
             StartCoroutine(ExtinguishAnimationCoroutine(new List<BlockCellInfo>(cellsToAnimate), duration));
         }
