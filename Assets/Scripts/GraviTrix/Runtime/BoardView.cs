@@ -56,6 +56,10 @@ namespace GraviTrix.Runtime
             boardRoot.localScale = rootScale;
             gridBackground.color = gridColor;
 
+            // Cells and the HOLD/NEXT preview pieces (which live under the preview anchors, not BoardRoot).
+            ClearViews();
+
+            // Effect objects the stopped animations left behind under BoardRoot.
             Transform grid = gridBackground.transform.parent;
             foreach (Transform child in boardRoot)
             {
@@ -64,8 +68,6 @@ namespace GraviTrix.Runtime
                     Destroy(child.gameObject);
                 }
             }
-
-            spawnedViews.Clear();
         }
 
         public void Render(BoardGrid board, PieceInstance activePiece, PieceInstance nextPiece, PieceInstance heldPiece, HashSet<Vector2Int> hiddenCells = null)
