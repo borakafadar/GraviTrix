@@ -153,7 +153,6 @@ namespace GraviTrix.Core
 
             SpawnNextPiece();
             UpdateHud();
-            RefreshViews();
         }
 
         public void MoveLeft()
@@ -176,8 +175,7 @@ namespace GraviTrix.Core
         {
             if (CanControlActivePiece())
             {
-                activePiece.TryRotateLeft(board);
-                RefreshViews();
+                if (activePiece.TryRotateLeft(board)) RefreshViews();
             }
         }
 
@@ -185,8 +183,7 @@ namespace GraviTrix.Core
         {
             if (CanControlActivePiece())
             {
-                activePiece.TryRotateRight(board);
-                RefreshViews();
+                if (activePiece.TryRotateRight(board)) RefreshViews();
             }
         }
 
@@ -211,7 +208,8 @@ namespace GraviTrix.Core
             // Collect lava melts over the whole drop so they play as one effect. The melt sound is
             // left to LockActivePiece, which always plays it for a lava piece, so it isn't doubled.
             batchMeltEffects = true;
-            while (TryAdvancePiece(DownVector))
+            // No render per row: every path out of LockActivePiece renders the board once.
+            while (TryAdvancePiece(DownVector, render: false))
             {
             }
             batchMeltEffects = false;
@@ -359,7 +357,7 @@ namespace GraviTrix.Core
             return true;
         }
 
-        private bool TryAdvancePiece(Vector2Int delta)
+        private bool TryAdvancePiece(Vector2Int delta, bool render = true)
         {
             if (activePiece == null)
             {
@@ -372,7 +370,7 @@ namespace GraviTrix.Core
             }
 
             bool moved = activePiece.TryMove(board, delta);
-            if (moved)
+            if (moved && render)
             {
                 RefreshViews();
             }
@@ -552,7 +550,6 @@ namespace GraviTrix.Core
 
             SpawnNextPiece();
             UpdateHud();
-            RefreshViews();
         }
 
         private void BeginBoardRotation()
@@ -560,6 +557,7 @@ namespace GraviTrix.Core
             activePiece = null;
             phase = GamePhase.RotatingBoard;
             UpdateHud();
+            RefreshViews(); // show the piece that just locked before the board turns
 
             if (SfxManager.Instance != null)
             {
@@ -675,7 +673,6 @@ namespace GraviTrix.Core
             phase = GamePhase.Spawning;
             SpawnNextPiece();
             UpdateHud();
-            RefreshViews();
         }
 
         private void TriggerAllClearBomb()
