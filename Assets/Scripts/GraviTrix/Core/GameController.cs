@@ -759,6 +759,12 @@ namespace GraviTrix.Core
 
             hiddenCells.Clear();
 
+            if (board.HasAdjacentMetalBlocks())
+            {
+                TriggerAllClearBomb();
+                return;
+            }
+
             if (pendingIsRotation)
             {
                 movesBeforeRotationTarget = config.GetRandomMovesBeforeRotation();
