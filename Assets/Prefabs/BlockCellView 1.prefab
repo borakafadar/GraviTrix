@@ -106,7 +106,3 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::GraviTrix.Runtime.BlockCellView
   spriteRenderer: {fileID: 0}
   skinLibrary: {fileID: 11400000, guid: 3dfd6795771cbdf4ea314dce82581e81, type: 2}
-  normalColor: {r: 1, g: 1, b: 1, a: 1}
-  lavaColor: {r: 1, g: 0.35, b: 0.1, a: 1}
-  metalColor: {r: 0.75, g: 0.8, b: 0.85, a: 1}
-  lineColor: {r: 1, g: 0.9, b: 0.25, a: 1}

@@ -143,31 +143,6 @@ namespace GraviTrix.Core
             return fullRows;
         }
 
-        public List<BlockCellInfo> GetCellsInRows(IEnumerable<int> rows)
-        {
-            List<BlockCellInfo> cells = new List<BlockCellInfo>();
-            HashSet<int> rowSet = new HashSet<int>(rows);
-
-            for (int y = 0; y < height; y++)
-            {
-                if (!rowSet.Contains(y))
-                {
-                    continue;
-                }
-
-                for (int x = 0; x < width; x++)
-                {
-                    if (occupied[x, y])
-                    {
-                        CellOccupant occupant = occupants[x, y];
-                        cells.Add(new BlockCellInfo(new Vector2Int(x, y), occupant.Kind, occupant.VisualType));
-                    }
-                }
-            }
-
-            return cells;
-        }
-
         public List<BlockCellInfo> GetAllCellsInRows(IEnumerable<int> rows)
         {
             List<BlockCellInfo> cells = new List<BlockCellInfo>();
