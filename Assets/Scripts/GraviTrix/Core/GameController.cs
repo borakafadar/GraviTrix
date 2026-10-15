@@ -233,6 +233,7 @@ namespace GraviTrix.Core
                 heldPiece = activePiece;
                 heldPiece.Reset(GetSpawnOrigin());
                 SpawnNextPiece();
+                canHold = false; // SpawnNextPiece re-enables hold for a fresh piece; this one came from a hold
             }
             else
             {

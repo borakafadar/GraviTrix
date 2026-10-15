@@ -48,6 +48,22 @@ namespace GraviTrix.Tests
             Assert.AreEqual(GamePhase.ClearingLines, controller.Phase);
         }
 
+        [Test]
+        public void SecondHoldBeforeLockingDoesNothing()
+        {
+            // New run, empty hold slot: the first hold stores the piece and brings in NEXT.
+            PieceInstance first = controller.ActivePiece;
+            controller.HoldPiece();
+            PieceInstance second = controller.ActivePiece;
+            Assert.AreSame(first, controller.HeldPiece);
+            Assert.AreNotSame(first, second);
+
+            // A second hold before the piece locks must be ignored.
+            controller.HoldPiece();
+            Assert.AreSame(second, controller.ActivePiece, "second hold swapped the active piece");
+            Assert.AreSame(first, controller.HeldPiece, "second hold changed the held piece");
+        }
+
         private void Set(string field, object value) => typeof(GameController).GetField(field, Private).SetValue(controller, value);
 
         private void Call(string method) => typeof(GameController).GetMethod(method, Private).Invoke(controller, null);
