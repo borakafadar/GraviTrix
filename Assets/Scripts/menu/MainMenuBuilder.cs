@@ -18,9 +18,15 @@ public class MainMenuBuilder : MonoBehaviour
     [SerializeField] private Text musicVolumeText;
     [SerializeField] private Slider sfxVolumeSlider;
     [SerializeField] private Text sfxVolumeText;
+    [SerializeField] private GameObject exitButton;
 
     private void Start()
     {
+#if UNITY_WEBGL
+        exitButton.SetActive(false); // Application.Quit does nothing in a browser
+#endif
+
+
         recordText.text = "TOP RECORD: " + PlayerPrefs.GetInt(recordPlayerPrefsKey, 0);
 
         musicVolumeSlider.SetValueWithoutNotify(PlayerPrefs.GetFloat(MusicVolumeKey, 0.8f));
