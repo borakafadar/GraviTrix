@@ -108,3 +108,5 @@ InitTestScene*.unity*
 
 .user/
 .claude/
+# Burst output from Web builds
+/[Dd]ata/[Pp]lugins/
