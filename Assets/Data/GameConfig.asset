@@ -12,12 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 03f51423039ee0a49b7caccf20ca191e, type: 3}
   m_Name: GameConfig
   m_EditorClassIdentifier: Assembly-CSharp::GraviTrix.Core.GameConfig
-  boardWidth: 12
-  boardHeight: 12
   spawnOrigin: {x: 5, y: 0}
   normalFallInterval: 0.45
   fastFallInterval: 0.15
-  boardRotationPauseSeconds: 0.35
   minMovesBeforeRotation: 3
   maxMovesBeforeRotation: 8
   singleLineScore: 100
@@ -25,3 +22,7 @@ MonoBehaviour:
   tripleLineScore: 500
   tetrisScore: 800
   rotationClearBonusMultiplier: 1.5
+  comboBonus: 50
+  lavaMeltScore: 10
+  pointsPerBlock: 10
+  bombBonus: 1000

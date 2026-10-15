@@ -40,14 +40,6 @@ namespace GraviTrix.Core
     }
 
     [Serializable]
-    public struct BlockCellDefinition
-    {
-        public Vector2Int LocalPosition;
-        public BlockKind Kind;
-        public BlockVisualType VisualType;
-    }
-
-    [Serializable]
     public struct BlockCellState
     {
         public Vector2Int LocalPosition;
@@ -87,26 +79,6 @@ namespace GraviTrix.Core
         {
             Kind = kind;
             VisualType = visualType;
-        }
-    }
-
-    public static class BlockVisualTypeResolver
-    {
-        public static BlockVisualType Resolve(BlockKind kind, BlockVisualType requestedVisual)
-        {
-            if (requestedVisual != BlockVisualType.Auto)
-            {
-                return requestedVisual;
-            }
-
-            return kind switch
-            {
-                BlockKind.Lava => BlockVisualType.Lava,
-                BlockKind.Metal => BlockVisualType.Metal,
-                BlockKind.Line => BlockVisualType.Line,
-                BlockKind.Slippery => BlockVisualType.Slippery,
-                _ => BlockVisualType.Yellow
-            };
         }
     }
 }
