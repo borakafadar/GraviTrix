@@ -446,11 +446,10 @@ namespace GraviTrix.Core
             bool placed = board.TryPlace(lastPlacedPieceCells);
             Debug.Assert(placed, "LockActivePiece: the active piece overlaps the board; its cells were not placed.");
             activePiece = null;
+            pendingIsRotation = false; // whatever this lock clears or explodes counts as a lock
 
             if (board.LastExtinguished.Count > 0)
             {
-                pendingIsRotation = false;
-
                 if (boardView != null)
                 {
                     boardView.PlayExtinguishAnimation(board.LastExtinguished, 0.6f);
@@ -582,9 +581,10 @@ namespace GraviTrix.Core
 
         private void OnBoardDropComplete()
         {
+            pendingIsRotation = true;
+
             if (board.LastExtinguished.Count > 0)
             {
-                pendingIsRotation = true; 
                 lastPlacedPieceCells.Clear();
                 
                 if (boardView != null)
@@ -667,9 +667,8 @@ namespace GraviTrix.Core
             phase = GamePhase.ClearingLines;
             phaseTimer = 1.0f; // Long animation duration
 
-            // pendingIsRotation makes ApplyPendingClears re-roll the rotation countdown and spawn the next piece
-            // when the explosion ends; the board's orientation is not changed (see audit GT-04).
-            pendingIsRotation = true;
+            // pendingIsRotation is left as set by the lock or rotation that caused the explosion, so ApplyPendingClears
+            // counts it as that lock (rotating if due) or re-rolls the countdown after a rotation.
             pendingLineRowsToClear.Clear();
 
             if (SfxManager.Instance != null)
