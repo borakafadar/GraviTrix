@@ -95,6 +95,22 @@ namespace GraviTrix.Tests
             Assert.AreEqual(2 * 7 + 250, controller.Score);
         }
 
+        [Test]
+        public void MetalExplosionOnLockStillRunsADueRotation()
+        {
+            var board = Board();
+            Place(board, 5, board.Height - 1, BlockKind.Metal);
+            Set("activePiece", Single(BlockKind.Metal, 5));
+            Set("movesUntilRotation", 1);
+            Set("pendingIsRotation", true); // stale value left over from an earlier rotation's clear
+
+            controller.HardDrop();
+            Call("ApplyPendingClears");
+
+            // Without views the rotation finishes at once, so check that the board turned.
+            Assert.IsTrue((bool)typeof(GameController).GetField("isBoardRotated", Private).GetValue(controller));
+        }
+
         [TestCase(11, 9)]
         [TestCase(0, 1)]
         [TestCase(5, 5)]
