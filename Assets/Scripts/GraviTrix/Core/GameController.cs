@@ -302,7 +302,7 @@ namespace GraviTrix.Core
             if (centerOccupied >= 6 && rescueCooldown <= 0 && !isLavaInPlay && !nextIsInitial)
             {
                 nextPiece = FallbackPieceFactory.CreateLava(GetSpawnOrigin());
-                rescueCooldown = 4; // Must drop 4 normal pieces before another rescue lava
+                rescueCooldown = 4; // No new rescue lava for the next 4 spawns (any piece, including the one a hold brings in)
             }
             else
             {
@@ -667,7 +667,8 @@ namespace GraviTrix.Core
             phase = GamePhase.ClearingLines;
             phaseTimer = 1.0f; // Long animation duration
 
-            // Set pendingIsRotation to true so that after animation ends, it resets gravity and spawns next piece
+            // pendingIsRotation makes ApplyPendingClears re-roll the rotation countdown and spawn the next piece
+            // when the explosion ends; the board's orientation is not changed (see audit GT-04).
             pendingIsRotation = true;
             pendingLineRowsToClear.Clear();
 
