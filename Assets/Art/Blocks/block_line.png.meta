@@ -129,10 +129,10 @@ TextureImporter:
       name: block_line_0
       rect:
         serializedVersion: 2
-        x: 0
-        y: 173
-        width: 1024
-        height: 851
+        x: 145
+        y: 174
+        width: 734
+        height: 716
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
