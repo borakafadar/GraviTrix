@@ -13,8 +13,6 @@ namespace GraviTrix.Core
 
         [Header("Data")]
         [SerializeField] private GameConfig config;
-        [SerializeField] private PieceLibrary pieceLibrary;
-        [SerializeField] private int pointsPerBlock = 10;
 
         [Header("Views")]
         [SerializeField] private BoardView boardView;
@@ -338,26 +336,6 @@ namespace GraviTrix.Core
             RefreshViews();
         }
 
-        private bool TryCreatePieceFromLibrary(out PieceInstance instance)
-        {
-            instance = null;
-            return false;
-
-            if (pieceLibrary == null || pieceLibrary.Count == 0)
-            {
-                return false;
-            }
-
-            PieceDefinition nextPiece = pieceLibrary.GetRandomPiece();
-            if (nextPiece == null)
-            {
-                return false;
-            }
-
-            instance = new PieceInstance(nextPiece, GetSpawnOrigin());
-            return true;
-        }
-
         private bool TryAdvancePiece(Vector2Int delta, bool render = true)
         {
             if (activePiece == null)
@@ -404,7 +382,7 @@ namespace GraviTrix.Core
                 cellsToAnimate = board.GetCells(cellsToClear);
                 
                 board.ClearCells(cellsToClear);
-                score += cellsToClear.Count * (config != null ? config.LavaMeltScore : pointsPerBlock);
+                score += cellsToClear.Count * config.LavaMeltScore;
 
                 if (batchMeltEffects)
                 {
@@ -681,7 +659,7 @@ namespace GraviTrix.Core
             List<BlockCellInfo> allCells = new List<BlockCellInfo>(board.GetOccupiedCells());
             
             int cellCount = allCells.Count;
-            score += (cellCount * pointsPerBlock) + 1000; // Big bonus for bomb clear
+            score += cellCount * config.PointsPerBlock + config.BombBonus;
             
             board.ClearAll();
             hiddenCells.Clear();
@@ -733,7 +711,7 @@ namespace GraviTrix.Core
                 board.ClearRows(pendingLineRowsToClear);
                 totalClearedThisTurn += pendingLineRowsToClear.Count;
                 score += config.GetLineClearScore(pendingLineRowsToClear.Count, false);
-                score += blocksDestroyedByLine * pointsPerBlock;
+                score += blocksDestroyedByLine * config.PointsPerBlock;
             }
 
             int clearedRows = board.ClearFullRows();
@@ -741,7 +719,7 @@ namespace GraviTrix.Core
             {
                 totalClearedThisTurn += clearedRows;
                 score += config.GetLineClearScore(clearedRows, pendingIsRotation);
-                score += (clearedRows * board.Width) * pointsPerBlock;
+                score += clearedRows * board.Width * config.PointsPerBlock;
             }
 
             if (totalClearedThisTurn > 0)
@@ -795,19 +773,9 @@ namespace GraviTrix.Core
         private Vector2Int GetSpawnOrigin()
         {
             Vector2Int requested = config != null ? config.SpawnOrigin : new Vector2Int(board.Width / 2, 0);
-            
-            // If the user hasn't set up the spawn origin in the config, it usually defaults to (0,0).
-            // We want it to be at the top of our board!
-            if (requested.y <= 0)
-            {
-                requested.y = 0;
-            }
-            if (requested.x <= 0)
-            {
-                requested.x = board.Width / 2;
-            }
 
-            int clampedX = Mathf.Clamp(requested.x, 1, board.Width - 2);
+            // Templates span x-1..x+2 (the I piece), so keep the whole piece on the board.
+            int clampedX = Mathf.Clamp(requested.x, 1, board.Width - 3);
             int clampedY = Mathf.Clamp(requested.y, 0, board.Height - 1);
             return new Vector2Int(clampedX, clampedY);
         }

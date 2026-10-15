@@ -64,6 +64,68 @@ namespace GraviTrix.Tests
             Assert.AreSame(first, controller.HeldPiece, "second hold changed the held piece");
         }
 
+        [Test]
+        public void PointsPerBlockFromConfigScoresALineClear()
+        {
+            SetConfig("pointsPerBlock", 7);
+            var board = Board();
+            for (int x = 0; x < board.Width - 1; x++) Place(board, x, board.Height - 1, BlockKind.Normal);
+            Set("activePiece", Single(BlockKind.Normal, board.Width - 1));
+
+            controller.HardDrop();
+            Call("ApplyPendingClears");
+
+            // singleLineScore (100) + 12 cleared blocks * pointsPerBlock (7)
+            Assert.AreEqual(100 + 12 * 7, controller.Score);
+        }
+
+        [Test]
+        public void BombBonusFromConfigScoresAMetalExplosion()
+        {
+            SetConfig("pointsPerBlock", 7);
+            SetConfig("bombBonus", 250);
+            var board = Board();
+            Place(board, 5, board.Height - 1, BlockKind.Metal);
+            Set("activePiece", Single(BlockKind.Metal, 5));
+
+            controller.HardDrop();
+
+            // 2 metal blocks * pointsPerBlock (7) + bombBonus (250)
+            Assert.AreEqual(GamePhase.ClearingLines, controller.Phase);
+            Assert.AreEqual(2 * 7 + 250, controller.Score);
+        }
+
+        [TestCase(11, 9)]
+        [TestCase(0, 1)]
+        [TestCase(5, 5)]
+        public void SpawnOriginStaysWherePiecesFit(int requestedX, int expectedX)
+        {
+            var config = (GameConfig)typeof(GameController).GetField("config", Private).GetValue(controller);
+            SetConfig("spawnOrigin", new Vector2Int(requestedX, -3));
+            typeof(GameConfig).GetMethod("OnValidate", Private).Invoke(config, null);
+            Assert.AreEqual(new Vector2Int(expectedX, 0), config.SpawnOrigin, "OnValidate");
+
+            // Even without OnValidate (e.g. a value set from code), the controller keeps the I piece on the board.
+            SetConfig("spawnOrigin", new Vector2Int(requestedX, 0));
+            var origin = (Vector2Int)typeof(GameController).GetMethod("GetSpawnOrigin", Private).Invoke(controller, null);
+            Assert.AreEqual(expectedX, origin.x, "GetSpawnOrigin");
+        }
+
+        private BoardGrid Board() => (BoardGrid)typeof(GameController).GetField("board", Private).GetValue(controller);
+
+        private static void Place(BoardGrid board, int x, int y, BlockKind kind) =>
+            board.TryPlace(new[] { new BlockCellInfo(new Vector2Int(x, y), kind, kind == BlockKind.Metal ? BlockVisualType.Metal : BlockVisualType.Red) });
+
+        private static PieceInstance Single(BlockKind kind, int x) =>
+            new PieceInstance(new Vector2Int(x, 0), Vector2Int.zero,
+                new[] { new BlockCellState(Vector2Int.zero, kind, kind == BlockKind.Metal ? BlockVisualType.Metal : BlockVisualType.Red) });
+
+        private void SetConfig(string field, object value)
+        {
+            var config = typeof(GameController).GetField("config", Private).GetValue(controller);
+            typeof(GameConfig).GetField(field, Private).SetValue(config, value);
+        }
+
         private void Set(string field, object value) => typeof(GameController).GetField(field, Private).SetValue(controller, value);
 
         private void Call(string method) => typeof(GameController).GetMethod(method, Private).Invoke(controller, null);

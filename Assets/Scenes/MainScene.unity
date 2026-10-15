@@ -5579,8 +5579,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GraviTrix.Core.GameController
   config: {fileID: 11400000, guid: e1cc8248f7d97a04281abcf0f5d5bee0, type: 2}
-  pieceLibrary: {fileID: 11400000, guid: 2525f418866dbbc45b8692eb2e233dda, type: 2}
-  pointsPerBlock: 10
   boardView: {fileID: 173300482}
   hudView: {fileID: 1688811810}
   gameOverPopup: {fileID: 811532988}

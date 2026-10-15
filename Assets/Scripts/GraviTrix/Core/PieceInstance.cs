@@ -12,7 +12,6 @@ namespace GraviTrix.Core
 
         public PieceInstance(Vector2Int origin, Vector2Int pivot, IEnumerable<BlockCellState> runtimeCells, bool rotatable = true)
         {
-            Definition = null;
             Origin = origin;
             this.pivot = pivot;
             this.rotatable = rotatable;
@@ -31,24 +30,6 @@ namespace GraviTrix.Core
             }
         }
 
-        public PieceInstance(PieceDefinition definition, Vector2Int origin)
-        {
-            Definition = definition;
-            Origin = origin;
-            pivot = definition != null ? definition.Pivot : Vector2Int.zero;
-            cells = new List<BlockCellState>();
-            originalCells = new List<BlockCellState>();
-
-            if (definition != null)
-            {
-                foreach (BlockCellState cell in definition.CreateRuntimeCells())
-                {
-                    cells.Add(cell);
-                    originalCells.Add(cell);
-                }
-            }
-        }
-
         public void Reset(Vector2Int newOrigin)
         {
             Origin = newOrigin;
@@ -59,7 +40,6 @@ namespace GraviTrix.Core
             }
         }
 
-        public PieceDefinition Definition { get; }
         public Vector2Int Origin { get; private set; }
 
         public IEnumerable<BlockCellInfo> GetWorldCells()

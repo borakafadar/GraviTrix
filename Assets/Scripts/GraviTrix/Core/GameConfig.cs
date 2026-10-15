@@ -6,14 +6,12 @@ namespace GraviTrix.Core
     public sealed class GameConfig : ScriptableObject
     {
         [Header("Board")]
-        [SerializeField] private int boardWidth = 12;
-        [SerializeField] private int boardHeight = 12;
+        [Tooltip("Where new pieces appear on the 12x12 board (y grows downward). x is kept within 1-9 so every piece fits.")]
         [SerializeField] private Vector2Int spawnOrigin = new Vector2Int(5, 0);
 
         [Header("Timing")]
         [SerializeField] private float normalFallInterval = 0.45f;
         [SerializeField] private float fastFallInterval = 0.15f;
-        [SerializeField] private float boardRotationPauseSeconds = 0.35f;
 
         [Header("Rotation Schedule")]
         [SerializeField] private int minMovesBeforeRotation = 4;
@@ -27,18 +25,25 @@ namespace GraviTrix.Core
         [SerializeField] private float rotationClearBonusMultiplier = 1.5f;
         [SerializeField] private int comboBonus = 50;
         [SerializeField] private int lavaMeltScore = 10;
+        [Tooltip("Points per block removed by a line clear, line block or metal explosion.")]
+        [SerializeField] private int pointsPerBlock = 10;
+        [Tooltip("Extra points for a metal explosion, on top of pointsPerBlock for every block it removes.")]
+        [SerializeField] private int bombBonus = 1000;
 
-        public int BoardWidth => boardWidth;
-        public int BoardHeight => boardHeight;
         public Vector2Int SpawnOrigin => spawnOrigin;
         public float NormalFallInterval => normalFallInterval;
         public float FastFallInterval => fastFallInterval;
-        public float BoardRotationPauseSeconds => boardRotationPauseSeconds;
-        public int MinMovesBeforeRotation => minMovesBeforeRotation;
-        public int MaxMovesBeforeRotation => maxMovesBeforeRotation;
         public float RotationClearBonusMultiplier => rotationClearBonusMultiplier;
         public int ComboBonus => comboBonus;
         public int LavaMeltScore => lavaMeltScore;
+        public int PointsPerBlock => pointsPerBlock;
+        public int BombBonus => bombBonus;
+
+        private void OnValidate()
+        {
+            // The I piece spans x-1..x+2, so x must stay within 1..9 on the 12-wide board.
+            spawnOrigin = new Vector2Int(Mathf.Clamp(spawnOrigin.x, 1, 9), Mathf.Max(0, spawnOrigin.y));
+        }
 
         public int GetRandomMovesBeforeRotation()
         {
