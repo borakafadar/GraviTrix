@@ -179,6 +179,52 @@ namespace GraviTrix.Tests
             Assert.AreEqual(4, controller.rescueCooldown);
         }
 
+        // DQ-1: a metal explosion doesn't end a combo.
+        [Test]
+        public void AMetalExplosionKeepsTheComboGoing()
+        {
+            ClearBottomRow();
+            Assert.AreEqual(100 + 12 * 10, controller.Score, "first clear: no combo bonus yet");
+
+            // The next lock sets off an explosion instead of clearing a row.
+            Place(5, 11, BlockKind.Metal);
+            controller.activePiece = Single(BlockKind.Metal, 5, 0);
+            controller.HardDrop();
+            Assert.AreEqual(0, CellCount(), "the explosion should clear the board");
+            controller.ApplyPendingClears();
+
+            int before = controller.Score;
+            ClearBottomRow();
+            // singleLineScore (100) + 12 blocks * pointsPerBlock (10) + comboBonus (50) * 1 earlier clear
+            Assert.AreEqual(100 + 12 * 10 + 50, controller.Score - before, "the clear after the explosion should get the combo bonus");
+        }
+
+        // A lock that clears nothing still ends the combo.
+        [Test]
+        public void ALockWithoutAClearEndsTheCombo()
+        {
+            ClearBottomRow();
+            controller.activePiece = Single(BlockKind.Normal, 0, 0);
+            controller.HardDrop();
+
+            int before = controller.Score;
+            ClearBottomRow();
+            Assert.AreEqual(100 + 12 * 10, controller.Score - before, "no combo bonus after a lock that cleared nothing");
+        }
+
+        // Fills row 11 except x=11, drops a single block into the gap and applies the clear.
+        private void ClearBottomRow()
+        {
+            for (int x = 0; x < 11; x++)
+            {
+                if (!controller.board.IsOccupied(new Vector2Int(x, 11))) Place(x, 11, BlockKind.Normal);
+            }
+            controller.activePiece = Single(BlockKind.Normal, 11, 0);
+            controller.HardDrop();
+            Assert.AreEqual(GamePhase.ClearingLines, controller.Phase, "row 11 should clear");
+            controller.ApplyPendingClears();
+        }
+
         private void Place(int x, int y, BlockKind kind)
         {
             BlockVisualType visual = kind == BlockKind.Metal ? BlockVisualType.Metal : kind == BlockKind.Slippery ? BlockVisualType.Slippery : BlockVisualType.Red;

@@ -723,10 +723,8 @@ namespace GraviTrix.Core
                     hudView.ShowComboText(comboCount);
                 }
             }
-            else
-            {
-                comboCount = 0;
-            }
+            // No rows cleared means this was a metal explosion: it keeps the combo going without adding a step
+            // or a combo bonus (design decision DQ-1). A lock or rotation that clears nothing still ends it.
 
             hiddenCells.Clear();
 
