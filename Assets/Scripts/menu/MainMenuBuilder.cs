@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 
@@ -33,6 +34,29 @@ public class MainMenuBuilder : MonoBehaviour
         sfxVolumeSlider.SetValueWithoutNotify(PlayerPrefs.GetFloat(SfxVolumeKey, 0.8f));
         UpdateVolumeText(musicVolumeText, "MUSIC VOLUME: ", musicVolumeSlider.value);
         UpdateVolumeText(sfxVolumeText, "SFX VOLUME: ", sfxVolumeSlider.value);
+    }
+
+    // Android Back arrives as Escape: it closes Options, or leaves the app from the main menu.
+    // Only Android leaves; Escape shouldn't quit a desktop or Web game without asking.
+    private void Update()
+    {
+        Keyboard keyboard = Keyboard.current;
+        if (keyboard != null && keyboard.escapeKey.wasPressedThisFrame)
+        {
+            OnBackPressed();
+        }
+    }
+
+    private void OnBackPressed()
+    {
+        if (optionsPopup.activeSelf)
+        {
+            CloseOptionsPopup();
+        }
+        else if (Application.platform == RuntimePlatform.Android)
+        {
+            Application.Quit();
+        }
     }
 
     public void OnMusicVolumeChanged(float value)
