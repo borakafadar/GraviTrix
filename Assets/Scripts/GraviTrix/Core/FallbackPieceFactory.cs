@@ -5,7 +5,7 @@ namespace GraviTrix.Core
 {
     public static class FallbackPieceFactory
     {
-        private sealed class Template
+        internal sealed class Template
         {
             public Vector2Int Pivot;
             public BlockCellState[] Cells;
@@ -19,7 +19,7 @@ namespace GraviTrix.Core
             }
         }
 
-        private static readonly Template I = new Template(
+        internal static readonly Template I = new Template(
             new Vector2Int(0, 0),
             new[]
             {
@@ -30,7 +30,7 @@ namespace GraviTrix.Core
             });
 
         // Not rotatable: a square looks the same rotated, and the corner pivot would only shift it.
-        private static readonly Template O = new Template(
+        internal static readonly Template O = new Template(
             new Vector2Int(0, 0),
             new[]
             {
@@ -40,7 +40,7 @@ namespace GraviTrix.Core
                 Cell(1, 1, BlockKind.Normal, BlockVisualType.Yellow)
             }, rotatable: false);
 
-        private static readonly Template T = new Template(
+        internal static readonly Template T = new Template(
             new Vector2Int(0, 0),
             new[]
             {
@@ -50,7 +50,7 @@ namespace GraviTrix.Core
                 Cell(0, 1, BlockKind.Normal, BlockVisualType.Blue)
             });
 
-        private static readonly Template L = new Template(
+        internal static readonly Template L = new Template(
             new Vector2Int(0, 0),
             new[]
             {
@@ -60,7 +60,7 @@ namespace GraviTrix.Core
                 Cell(1, 1, BlockKind.Normal, BlockVisualType.Green)
             });
 
-        private static readonly Template J = new Template(
+        internal static readonly Template J = new Template(
             new Vector2Int(0, 0),
             new[]
             {
@@ -70,7 +70,7 @@ namespace GraviTrix.Core
                 Cell(-1, 1, BlockKind.Normal, BlockVisualType.DeepBlue)
             });
 
-        private static readonly Template S = new Template(
+        internal static readonly Template S = new Template(
             new Vector2Int(0, 0),
             new[]
             {
@@ -80,7 +80,7 @@ namespace GraviTrix.Core
                 Cell(0, 1, BlockKind.Normal, BlockVisualType.Pink)
             });
 
-        private static readonly Template Z = new Template(
+        internal static readonly Template Z = new Template(
             new Vector2Int(0, 0),
             new[]
             {
@@ -91,7 +91,7 @@ namespace GraviTrix.Core
             });
 
         // Special: line clear single cell
-        private static readonly Template Line = new Template(
+        internal static readonly Template Line = new Template(
             new Vector2Int(0, 0),
             new[]
             {
@@ -99,7 +99,7 @@ namespace GraviTrix.Core
             });
 
         // Special: lava 2x2 cell (not rotatable, same reason as O)
-        private static readonly Template Lava = new Template(
+        internal static readonly Template Lava = new Template(
             new Vector2Int(0, 0),
             new[]
             {
@@ -110,7 +110,7 @@ namespace GraviTrix.Core
             }, rotatable: false);
 
         // Special: metal single cell
-        private static readonly Template Metal = new Template(
+        internal static readonly Template Metal = new Template(
             new Vector2Int(0, 0),
             new[]
             {
@@ -155,8 +155,8 @@ namespace GraviTrix.Core
             return CreateFromTemplate(Metal, origin);
         }
 
-        // Also used by the EditMode tests to build a specific piece by template name.
-        private static PieceInstance CreateFromTemplate(Template template, Vector2Int origin)
+        // Internal so the EditMode tests can build a specific template (see Assets/Scripts/AssemblyInfo.cs).
+        internal static PieceInstance CreateFromTemplate(Template template, Vector2Int origin)
         {
             return Build(template, origin, template.Cells);
         }

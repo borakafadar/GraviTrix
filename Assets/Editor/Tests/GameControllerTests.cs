@@ -1,4 +1,3 @@
-using System.Reflection;
 using GraviTrix.Core;
 using NUnit.Framework;
 using UnityEditor;
@@ -7,10 +6,9 @@ using UnityEngine;
 namespace GraviTrix.Tests
 {
     // EditMode tests that drive GameController without any views (BoardView, HUD, popup) attached.
+    // They use the controller's internal members (InternalsVisibleTo in Assets/Scripts/AssemblyInfo.cs).
     public sealed class GameControllerTests
     {
-        private const BindingFlags Private = BindingFlags.Instance | BindingFlags.NonPublic;
-
         private GameObject host;
         private GameController controller;
 
@@ -20,14 +18,15 @@ namespace GraviTrix.Tests
             // HideAndDontSave keeps the object out of the open scene, so tests don't dirty it.
             host = EditorUtility.CreateGameObjectWithHideFlags("GameController (test)", HideFlags.HideAndDontSave);
             controller = host.AddComponent<GameController>();
-            Set("config", ScriptableObject.CreateInstance<GameConfig>());
-            Call("Awake");
-            Call("Start");
+            controller.config = ScriptableObject.CreateInstance<GameConfig>();
+            controller.Awake();
+            controller.RestartGame();
         }
 
         [TearDown]
         public void TearDown()
         {
+            Object.DestroyImmediate(controller.config);
             Object.DestroyImmediate(host);
         }
 
@@ -35,14 +34,13 @@ namespace GraviTrix.Tests
         public void LineClearWithoutViewsDoesNotThrow()
         {
             // Fill the bottom row except the last column, then hard-drop a single block into that gap.
-            var board = (BoardGrid)typeof(GameController).GetField("board", Private).GetValue(controller);
+            BoardGrid board = controller.board;
             for (int x = 0; x < board.Width - 1; x++)
             {
                 board.TryPlace(new[] { new BlockCellInfo(new Vector2Int(x, board.Height - 1), BlockKind.Normal, BlockVisualType.Red) });
             }
 
-            Set("activePiece", new PieceInstance(new Vector2Int(board.Width - 1, 0), Vector2Int.zero,
-                new[] { new BlockCellState(Vector2Int.zero, BlockKind.Normal, BlockVisualType.Red) }));
+            controller.activePiece = Single(BlockKind.Normal, board.Width - 1);
 
             Assert.DoesNotThrow(() => controller.HardDrop());
             Assert.AreEqual(GamePhase.ClearingLines, controller.Phase);
@@ -67,13 +65,13 @@ namespace GraviTrix.Tests
         [Test]
         public void PointsPerBlockFromConfigScoresALineClear()
         {
-            SetConfig("pointsPerBlock", 7);
-            var board = Board();
+            controller.config.pointsPerBlock = 7;
+            BoardGrid board = controller.board;
             for (int x = 0; x < board.Width - 1; x++) Place(board, x, board.Height - 1, BlockKind.Normal);
-            Set("activePiece", Single(BlockKind.Normal, board.Width - 1));
+            controller.activePiece = Single(BlockKind.Normal, board.Width - 1);
 
             controller.HardDrop();
-            Call("ApplyPendingClears");
+            controller.ApplyPendingClears();
 
             // singleLineScore (100) + 12 cleared blocks * pointsPerBlock (7)
             Assert.AreEqual(100 + 12 * 7, controller.Score);
@@ -82,11 +80,11 @@ namespace GraviTrix.Tests
         [Test]
         public void BombBonusFromConfigScoresAMetalExplosion()
         {
-            SetConfig("pointsPerBlock", 7);
-            SetConfig("bombBonus", 250);
-            var board = Board();
+            controller.config.pointsPerBlock = 7;
+            controller.config.bombBonus = 250;
+            BoardGrid board = controller.board;
             Place(board, 5, board.Height - 1, BlockKind.Metal);
-            Set("activePiece", Single(BlockKind.Metal, 5));
+            controller.activePiece = Single(BlockKind.Metal, 5);
 
             controller.HardDrop();
 
@@ -98,17 +96,17 @@ namespace GraviTrix.Tests
         [Test]
         public void MetalExplosionOnLockStillRunsADueRotation()
         {
-            var board = Board();
+            BoardGrid board = controller.board;
             Place(board, 5, board.Height - 1, BlockKind.Metal);
-            Set("activePiece", Single(BlockKind.Metal, 5));
-            Set("movesUntilRotation", 1);
-            Set("pendingIsRotation", true); // stale value left over from an earlier rotation's clear
+            controller.activePiece = Single(BlockKind.Metal, 5);
+            controller.movesUntilRotation = 1;
+            controller.pendingIsRotation = true; // stale value left over from an earlier rotation's clear
 
             controller.HardDrop();
-            Call("ApplyPendingClears");
+            controller.ApplyPendingClears();
 
             // Without views the rotation finishes at once, so check that the board turned.
-            Assert.IsTrue((bool)typeof(GameController).GetField("isBoardRotated", Private).GetValue(controller));
+            Assert.IsTrue(controller.isBoardRotated);
         }
 
         [TestCase(11, 9)]
@@ -116,18 +114,15 @@ namespace GraviTrix.Tests
         [TestCase(5, 5)]
         public void SpawnOriginStaysWherePiecesFit(int requestedX, int expectedX)
         {
-            var config = (GameConfig)typeof(GameController).GetField("config", Private).GetValue(controller);
-            SetConfig("spawnOrigin", new Vector2Int(requestedX, -3));
-            typeof(GameConfig).GetMethod("OnValidate", Private).Invoke(config, null);
+            GameConfig config = controller.config;
+            config.spawnOrigin = new Vector2Int(requestedX, -3);
+            config.OnValidate();
             Assert.AreEqual(new Vector2Int(expectedX, 0), config.SpawnOrigin, "OnValidate");
 
             // Even without OnValidate (e.g. a value set from code), the controller keeps the I piece on the board.
-            SetConfig("spawnOrigin", new Vector2Int(requestedX, 0));
-            var origin = (Vector2Int)typeof(GameController).GetMethod("GetSpawnOrigin", Private).Invoke(controller, null);
-            Assert.AreEqual(expectedX, origin.x, "GetSpawnOrigin");
+            config.spawnOrigin = new Vector2Int(requestedX, 0);
+            Assert.AreEqual(expectedX, controller.GetSpawnOrigin().x, "GetSpawnOrigin");
         }
-
-        private BoardGrid Board() => (BoardGrid)typeof(GameController).GetField("board", Private).GetValue(controller);
 
         private static void Place(BoardGrid board, int x, int y, BlockKind kind) =>
             board.TryPlace(new[] { new BlockCellInfo(new Vector2Int(x, y), kind, kind == BlockKind.Metal ? BlockVisualType.Metal : BlockVisualType.Red) });
@@ -135,15 +130,5 @@ namespace GraviTrix.Tests
         private static PieceInstance Single(BlockKind kind, int x) =>
             new PieceInstance(new Vector2Int(x, 0), Vector2Int.zero,
                 new[] { new BlockCellState(Vector2Int.zero, kind, kind == BlockKind.Metal ? BlockVisualType.Metal : BlockVisualType.Red) });
-
-        private void SetConfig(string field, object value)
-        {
-            var config = typeof(GameController).GetField("config", Private).GetValue(controller);
-            typeof(GameConfig).GetField(field, Private).SetValue(config, value);
-        }
-
-        private void Set(string field, object value) => typeof(GameController).GetField(field, Private).SetValue(controller, value);
-
-        private void Call(string method) => typeof(GameController).GetMethod(method, Private).Invoke(controller, null);
     }
 }
