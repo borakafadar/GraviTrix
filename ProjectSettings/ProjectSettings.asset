@@ -43,8 +43,8 @@ PlayerSettings:
   - logo: {fileID: -6199178403714176084, guid: f460a951a80cd994caca77c059587311, type: 3}
     duration: 2
   m_VirtualRealitySplashScreen: {fileID: 0}
-  defaultScreenWidth: 768
-  defaultScreenHeight: 1366
+  defaultScreenWidth: 360
+  defaultScreenHeight: 640
   defaultScreenWidthWeb: 960
   defaultScreenHeightWeb: 600
   m_StereoRenderingPath: 0
@@ -97,7 +97,7 @@ PlayerSettings:
   bakeCollisionMeshes: 0
   forceSingleInstance: 0
   useFlipModelSwapchain: 1
-  resizableWindow: 0
+  resizableWindow: 1
   useMacAppStoreValidation: 0
   macAppStoreCategory: public.app-category.games
   gpuSkinning: 0
