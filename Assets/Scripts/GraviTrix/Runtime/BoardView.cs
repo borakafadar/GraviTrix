@@ -316,8 +316,9 @@ namespace GraviTrix.Runtime
             float elapsed = 0f;
             Vector3 originalScale = Vector3.one;
 
+            // Shake around the authored position, not the current one, so an overlapping rotation can't be offset.
             Transform targetToShake = root;
-            Vector3 originalTargetPos = targetToShake.localPosition;
+            Vector3 originalTargetPos = rootPosition;
 
             while (elapsed < duration)
             {
@@ -656,11 +657,13 @@ namespace GraviTrix.Runtime
 
         private IEnumerator BoardRotationCoroutine(bool isLeft, Action onComplete)
         {
+            // Start from and return to the authored pose: a rotation that starts right after an explosion
+            // would otherwise capture the shaken position and leave the board offset.
             Transform targetTransform = boardRoot != null ? boardRoot : transform;
-            Vector3 originalScale = targetTransform.localScale;
+            Vector3 originalScale = rootScale;
             Vector3 scaleDown = originalScale * 0.90f;
-            Quaternion originalRotation = targetTransform.localRotation;
-            Vector3 originalLocalPos = targetTransform.localPosition;
+            Quaternion originalRotation = rootRotation;
+            Vector3 originalLocalPos = rootPosition;
 
             float angle = isLeft ? 90f : -90f;
             Quaternion targetRotation = originalRotation * Quaternion.Euler(0, 0, angle);
