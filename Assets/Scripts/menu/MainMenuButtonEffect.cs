@@ -3,7 +3,8 @@ using UnityEngine.UI;
 
 public class MainMenuButtonEffect : MonoBehaviour
 {
-    private Image darkOverlay;
+    [Tooltip("The button's \"Hover Dark Overlay\" child, darkened on hover and press.")]
+    [SerializeField] private Image darkOverlay;
     private RectTransform rectTransform;
     private Canvas parentCanvas;
 
@@ -16,11 +17,6 @@ public class MainMenuButtonEffect : MonoBehaviour
     private float pressedDarkness = 0.35f;
 
     private float animationSpeed = 14f;
-
-    public void SetOverlay(Image overlay)
-    {
-        darkOverlay = overlay;
-    }
 
     private void Awake()
     {
