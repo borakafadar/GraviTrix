@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using GraviTrix.Core;
 using NUnit.Framework;
 using UnityEngine;
@@ -9,7 +8,15 @@ namespace GraviTrix.Tests
 {
     public sealed class PieceRotationTests
     {
-        // Template field names in FallbackPieceFactory. O is left out: a square has nothing to rotate.
+        // FallbackPieceFactory's internal templates, by the names used in test cases and failure messages.
+        private static readonly Dictionary<string, FallbackPieceFactory.Template> Templates = new Dictionary<string, FallbackPieceFactory.Template>
+        {
+            { "I", FallbackPieceFactory.I }, { "O", FallbackPieceFactory.O }, { "T", FallbackPieceFactory.T },
+            { "L", FallbackPieceFactory.L }, { "J", FallbackPieceFactory.J }, { "S", FallbackPieceFactory.S },
+            { "Z", FallbackPieceFactory.Z }, { "Lava", FallbackPieceFactory.Lava }
+        };
+
+        // O is left out: a square has nothing to rotate.
         private static readonly string[] RotatingTetrominoes = { "I", "T", "L", "J", "S", "Z" };
 
         // GameConfig.asset spawn origin, as clamped by GameController.GetSpawnOrigin.
@@ -17,12 +24,7 @@ namespace GraviTrix.Tests
 
         private static PieceInstance FromTemplate(string name, Vector2Int origin)
         {
-            const BindingFlags flags = BindingFlags.NonPublic | BindingFlags.Static;
-            FieldInfo template = typeof(FallbackPieceFactory).GetField(name, flags);
-            MethodInfo create = typeof(FallbackPieceFactory).GetMethod("CreateFromTemplate", flags);
-            Assert.IsNotNull(template, "FallbackPieceFactory has no template named " + name);
-            Assert.IsNotNull(create, "FallbackPieceFactory.CreateFromTemplate not found");
-            return (PieceInstance)create.Invoke(null, new[] { template.GetValue(null), origin });
+            return FallbackPieceFactory.CreateFromTemplate(Templates[name], origin);
         }
 
         private static string Cells(PieceInstance piece)

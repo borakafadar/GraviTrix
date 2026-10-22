@@ -12,46 +12,46 @@ namespace GraviTrix.Core
         private static readonly Vector2Int DownVector = new Vector2Int(0, 1);
 
         [Header("Data")]
-        [SerializeField] private GameConfig config;
+        [SerializeField] internal GameConfig config;
 
         [Header("Views")]
         [SerializeField] private BoardView boardView;
         [SerializeField] private GameHudView hudView;
         [SerializeField] private GameOverPopup gameOverPopup;
 
-        private BoardGrid board;
-        private PieceInstance activePiece;
+        // Members marked internal are also set or called by the EditMode tests (see Assets/Scripts/AssemblyInfo.cs).
+        internal BoardGrid board;
+        internal PieceInstance activePiece;
         private PieceInstance nextPiece;
-        private PieceInstance heldPiece;
+        internal PieceInstance heldPiece;
         private bool canHold = true;
         private GamePhase phase = GamePhase.Spawning;
         private float fallAccumulator;
         private float phaseTimer;
         private int score;
-        private int movesUntilRotation;
+        internal int movesUntilRotation;
         private int movesBeforeRotationTarget;
-        private bool isBoardRotated;
+        internal bool isBoardRotated;
         private int comboCount;
-        private int spawnedPiecesCount;
+        internal int spawnedPiecesCount;
         private int movesUntilNextMetal;
 
         private List<int> pendingLineRowsToClear = new List<int>();
         private HashSet<Vector2Int> hiddenCells = new HashSet<Vector2Int>();
-        private bool pendingIsRotation;
-        private int rescueCooldown;
+        internal bool pendingIsRotation;
+        internal int rescueCooldown;
         private bool batchMeltEffects;
         private bool isNewRecord;
         private readonly List<BlockCellInfo> batchedMeltCells = new List<BlockCellInfo>();
 
         public int Score => score;
         public GamePhase Phase => phase;
-        public int MovesUntilRotation => movesUntilRotation;
-        
+
         public PieceInstance ActivePiece => activePiece;
         public PieceInstance NextPiece => nextPiece;
         public PieceInstance HeldPiece => heldPiece;
 
-        private void Awake()
+        internal void Awake()
         {
             board = new BoardGrid(FixedBoardSize, FixedBoardSize);
         }
@@ -263,7 +263,7 @@ namespace GraviTrix.Core
             return phase == GamePhase.Falling && activePiece != null;
         }
 
-        private void SpawnNextPiece()
+        internal void SpawnNextPiece()
         {
             spawnedPiecesCount++;
             bool activeIsInitial = spawnedPiecesCount <= 4;
@@ -584,16 +584,6 @@ namespace GraviTrix.Core
         {
             pendingIsRotation = true;
 
-            if (board.LastExtinguished.Count > 0)
-            {
-                lastPlacedPieceCells.Clear();
-                
-                if (boardView != null)
-                {
-                    boardView.PlayExtinguishAnimation(board.LastExtinguished, 0.6f);
-                }
-            }
-
             var slideMovements = board.SlideSlipperyBlocks();
             if (slideMovements.Count > 0 && boardView != null)
             {
@@ -691,7 +681,7 @@ namespace GraviTrix.Core
             RefreshViews();
         }
 
-        private void ApplyPendingClears()
+        internal void ApplyPendingClears()
         {
             int totalClearedThisTurn = 0;
 
@@ -771,7 +761,7 @@ namespace GraviTrix.Core
             RefreshViews();
         }
 
-        private Vector2Int GetSpawnOrigin()
+        internal Vector2Int GetSpawnOrigin()
         {
             Vector2Int requested = config != null ? config.SpawnOrigin : new Vector2Int(board.Width / 2, 0);
 

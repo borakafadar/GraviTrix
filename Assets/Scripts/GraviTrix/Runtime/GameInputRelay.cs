@@ -6,7 +6,7 @@ namespace GraviTrix.Runtime
 {
     public sealed class GameInputRelay : MonoBehaviour
     {
-        [SerializeField] private GameController controller;
+        [SerializeField] internal GameController controller;
         [SerializeField] private float swipeThreshold = 80f;
         [SerializeField] private float tapRotateMaxDuration = 0.25f;
 
@@ -57,11 +57,6 @@ namespace GraviTrix.Runtime
         public void OnHardDrop()
         {
             Active?.HardDrop();
-        }
-
-        public void OnRestart()
-        {
-            Active?.RestartGame();
         }
 
         private void ReadKeyboardInput()

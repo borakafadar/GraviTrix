@@ -7,7 +7,7 @@ namespace GraviTrix.Core
     {
         [Header("Board")]
         [Tooltip("Where new pieces appear on the 12x12 board (y grows downward). x is kept within 1-9 so every piece fits.")]
-        [SerializeField] private Vector2Int spawnOrigin = new Vector2Int(5, 0);
+        [SerializeField] internal Vector2Int spawnOrigin = new Vector2Int(5, 0);
 
         [Header("Timing")]
         [SerializeField] private float normalFallInterval = 0.45f;
@@ -26,9 +26,9 @@ namespace GraviTrix.Core
         [SerializeField] private int comboBonus = 50;
         [SerializeField] private int lavaMeltScore = 10;
         [Tooltip("Points per block removed by a line clear, line block or metal explosion.")]
-        [SerializeField] private int pointsPerBlock = 10;
+        [SerializeField] internal int pointsPerBlock = 10;
         [Tooltip("Extra points for a metal explosion, on top of pointsPerBlock for every block it removes.")]
-        [SerializeField] private int bombBonus = 1000;
+        [SerializeField] internal int bombBonus = 1000;
 
         public Vector2Int SpawnOrigin => spawnOrigin;
         public float NormalFallInterval => normalFallInterval;
@@ -39,7 +39,7 @@ namespace GraviTrix.Core
         public int PointsPerBlock => pointsPerBlock;
         public int BombBonus => bombBonus;
 
-        private void OnValidate()
+        internal void OnValidate()
         {
             // The I piece spans x-1..x+2, so x must stay within 1..9 on the 12-wide board.
             spawnOrigin = new Vector2Int(Mathf.Clamp(spawnOrigin.x, 1, 9), Mathf.Max(0, spawnOrigin.y));

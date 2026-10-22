@@ -36,6 +36,12 @@ namespace GraviTrix.UI
 
         public void TogglePause() { if (isPaused) ResumeGame(); else PauseGame(); }
 
+        // A phone call, the notification shade, alt-tab or a tab switch pauses the game, so the
+        // piece isn't already falling when the player comes back. PauseGame ignores game over.
+        private void OnApplicationPause(bool paused) { if (paused && !isPaused) PauseGame(); }
+
+        private void OnApplicationFocus(bool focused) { if (!focused && !isPaused) PauseGame(); }
+
         private void PauseGame()
         {
             // Esc or the pause button during game over would open the pause popup behind the
