@@ -19,10 +19,6 @@ namespace GraviTrix.Runtime
         [SerializeField] private Sprite line;
         [SerializeField] private Sprite obsidian;
         [SerializeField] private Sprite blockRemoved;
-        [SerializeField] private Sprite rotationArrow;
-
-        public Sprite BlockRemoved => blockRemoved;
-        public Sprite RotationArrow => rotationArrow;
 
         public Sprite GetSprite(BlockVisualType visualType)
         {

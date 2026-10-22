@@ -59,11 +59,6 @@ namespace GraviTrix.Runtime
             Active?.HardDrop();
         }
 
-        public void OnRestart()
-        {
-            Active?.RestartGame();
-        }
-
         private void ReadKeyboardInput()
         {
             Keyboard keyboard = Keyboard.current;

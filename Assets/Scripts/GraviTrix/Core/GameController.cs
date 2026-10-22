@@ -45,8 +45,7 @@ namespace GraviTrix.Core
 
         public int Score => score;
         public GamePhase Phase => phase;
-        public int MovesUntilRotation => movesUntilRotation;
-        
+
         public PieceInstance ActivePiece => activePiece;
         public PieceInstance NextPiece => nextPiece;
         public PieceInstance HeldPiece => heldPiece;
@@ -583,16 +582,6 @@ namespace GraviTrix.Core
         private void OnBoardDropComplete()
         {
             pendingIsRotation = true;
-
-            if (board.LastExtinguished.Count > 0)
-            {
-                lastPlacedPieceCells.Clear();
-                
-                if (boardView != null)
-                {
-                    boardView.PlayExtinguishAnimation(board.LastExtinguished, 0.6f);
-                }
-            }
 
             var slideMovements = board.SlideSlipperyBlocks();
             if (slideMovements.Count > 0 && boardView != null)
