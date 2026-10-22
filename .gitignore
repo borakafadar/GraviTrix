@@ -110,3 +110,6 @@ InitTestScene*.unity*
 .claude/
 # Burst output from Web builds
 /[Dd]ata/[Pp]lugins/
+# com.unity.pipeline bakes these into each build and deletes them afterwards; an interrupted build can leave them behind
+/[Aa]ssets/[Ss]ettings/[Pp]ipeline/[Rr]esources/RuntimePipelineConfig.asset*
+/[Aa]ssets/[Ss]ettings/[Pp]ipeline/[Rr]esources/RuntimePipelineBuildInfo.asset*
