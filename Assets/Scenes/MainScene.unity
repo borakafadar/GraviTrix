@@ -826,6 +826,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ccd4468440f4db3478b467eca6f5e72a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MainMenuButtonEffect
+  darkOverlay: {fileID: 1037091279}
 --- !u!114 &216290029
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2760,6 +2761,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ccd4468440f4db3478b467eca6f5e72a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MainMenuButtonEffect
+  darkOverlay: {fileID: 392383870}
 --- !u!114 &738605303
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4131,6 +4133,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ccd4468440f4db3478b467eca6f5e72a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MainMenuButtonEffect
+  darkOverlay: {fileID: 260335578}
 --- !u!114 &1106032174
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5635,6 +5638,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ccd4468440f4db3478b467eca6f5e72a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MainMenuButtonEffect
+  darkOverlay: {fileID: 1079103207}
 --- !u!114 &1619064676
 MonoBehaviour:
   m_ObjectHideFlags: 0

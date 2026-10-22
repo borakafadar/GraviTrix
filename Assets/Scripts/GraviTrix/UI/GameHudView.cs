@@ -21,9 +21,25 @@ namespace GraviTrix.UI
         [SerializeField] private TextMeshProUGUI actionTextPrefab;
 
         private readonly List<GameObject> tickMarks = new List<GameObject>();
+        private readonly List<GameObject> popupTexts = new List<GameObject>();
         private int lastTotalMoves = -1;
         private int lastScore = -1;
         private float targetScaleX = 1f;
+
+        /// <summary>
+        /// Stops the combo/action text animations and removes their texts, so the old game's
+        /// "GOOD!" or combo doesn't play over a restarted one.
+        /// </summary>
+        public void ResetView()
+        {
+            StopAllCoroutines();
+
+            foreach (GameObject text in popupTexts)
+            {
+                if (text != null) Destroy(text);
+            }
+            popupTexts.Clear();
+        }
 
         public void SetRotationProgress(float normalizedProgress, int movesRemaining, bool rotateLeft = true, int totalMoves = 0)
         {
@@ -114,6 +130,7 @@ namespace GraviTrix.UI
 
             TextMeshProUGUI tmp = Instantiate(comboTextPrefab, scoreText.transform.parent);
             tmp.text = $"{message}\n<size=50%>{comboCount}x COMBO!</size>";
+            popupTexts.Add(tmp.gameObject);
             StartCoroutine(AnimateComboText(tmp));
         }
 
@@ -145,6 +162,7 @@ namespace GraviTrix.UI
                 yield return null;
             }
 
+            popupTexts.Remove(tmp.gameObject);
             Destroy(tmp.gameObject);
         }
 
@@ -152,6 +170,7 @@ namespace GraviTrix.UI
         {
             TextMeshProUGUI tmp = Instantiate(actionTextPrefab, scoreText.transform.parent);
             tmp.text = message;
+            popupTexts.Add(tmp.gameObject);
             StartCoroutine(AnimateActionText(tmp));
         }
 
@@ -203,6 +222,7 @@ namespace GraviTrix.UI
                 yield return null;
             }
 
+            popupTexts.Remove(tmp.gameObject);
             Destroy(tmp.gameObject);
         }
     }

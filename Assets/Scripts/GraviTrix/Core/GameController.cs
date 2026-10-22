@@ -119,6 +119,7 @@ namespace GraviTrix.Core
             // Stop the old game's animations first, so their completion callbacks
             // (rotation -> drop -> slide -> spawn, game over -> popup) never reach the new game.
             if (boardView != null) boardView.ResetView();
+            if (hudView != null) hudView.ResetView();
             Time.timeScale = 1f;
             if (gameOverPopup != null) gameOverPopup.Hide();
             board.Clear();
