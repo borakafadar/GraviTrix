@@ -42,6 +42,8 @@ namespace GraviTrix.Core
         internal int rescueCooldown;
         private bool batchMeltEffects;
         private bool isNewRecord;
+        private float extinguishEffectEndsAt;
+        private float rotationStartDelay;
         private readonly List<BlockCellInfo> batchedMeltCells = new List<BlockCellInfo>();
 
         public int Score => score;
@@ -77,6 +79,14 @@ namespace GraviTrix.Core
 
             if (phase == GamePhase.RotatingBoard)
             {
+                if (rotationStartDelay > 0f)
+                {
+                    rotationStartDelay -= Time.deltaTime;
+                    if (rotationStartDelay <= 0f)
+                    {
+                        StartBoardRotation();
+                    }
+                }
                 UpdateHud();
                 return;
             }
@@ -131,6 +141,8 @@ namespace GraviTrix.Core
             phase = GamePhase.Spawning;
             fallAccumulator = 0f;
             isBoardRotated = false;
+            rotationStartDelay = 0f;
+            extinguishEffectEndsAt = 0f;
             comboCount = 0;
             spawnedPiecesCount = 0;
             movesUntilNextMetal = UnityEngine.Random.Range(15, 21);
@@ -453,7 +465,7 @@ namespace GraviTrix.Core
             {
                 if (boardView != null)
                 {
-                    boardView.PlayExtinguishAnimation(board.LastExtinguished, 0.6f);
+                    extinguishEffectEndsAt = Time.time + boardView.PlayExtinguishAnimation(board.LastExtinguished, 0.6f);
                 }
             }
 
@@ -538,11 +550,24 @@ namespace GraviTrix.Core
             UpdateHud();
             RefreshViews(); // show the piece that just locked before the board turns
 
+            // A lava lock's steam lives under BoardRoot and would be left at the old orientation when the board
+            // turns, so let it finish first. Update counts this down and starts the turn.
+            rotationStartDelay = boardView != null ? extinguishEffectEndsAt - Time.time : 0f;
+            if (rotationStartDelay <= 0f)
+            {
+                StartBoardRotation();
+            }
+        }
+
+        private void StartBoardRotation()
+        {
+            rotationStartDelay = 0f;
+
             if (SfxManager.Instance != null)
             {
                 SfxManager.Instance.PlayGravityChange();
             }
-            
+
             bool rotateLeft = !isBoardRotated;
             if (boardView != null)
             {
