@@ -377,16 +377,9 @@ namespace GraviTrix.Runtime
             }
         }
 
-        /// <summary>
-        /// Plays the lava overlay fade and the smoke puffs, and returns how many seconds until both have
-        /// finished. The smoke's length comes from the SmokeEffect prefab: emission time plus particle lifetime.
-        /// </summary>
-        public float PlayExtinguishAnimation(IReadOnlyList<BlockCellInfo> cellsToAnimate, float duration)
+        public void PlayExtinguishAnimation(IReadOnlyList<BlockCellInfo> cellsToAnimate, float duration)
         {
             StartCoroutine(ExtinguishAnimationCoroutine(new List<BlockCellInfo>(cellsToAnimate), duration));
-
-            ParticleSystem.MainModule smoke = smokePrefab.main;
-            return Mathf.Max(duration, smoke.startDelay.constantMax + smoke.duration + smoke.startLifetime.constantMax);
         }
 
         private IEnumerator ExtinguishAnimationCoroutine(List<BlockCellInfo> cells, float duration)
