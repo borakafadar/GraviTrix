@@ -23,7 +23,7 @@ namespace GraviTrix.Core
         internal BoardGrid board;
         internal PieceInstance activePiece;
         private PieceInstance nextPiece;
-        private PieceInstance heldPiece;
+        internal PieceInstance heldPiece;
         private bool canHold = true;
         private GamePhase phase = GamePhase.Spawning;
         private float fallAccumulator;
@@ -33,13 +33,13 @@ namespace GraviTrix.Core
         private int movesBeforeRotationTarget;
         internal bool isBoardRotated;
         private int comboCount;
-        private int spawnedPiecesCount;
+        internal int spawnedPiecesCount;
         private int movesUntilNextMetal;
 
         private List<int> pendingLineRowsToClear = new List<int>();
         private HashSet<Vector2Int> hiddenCells = new HashSet<Vector2Int>();
         internal bool pendingIsRotation;
-        private int rescueCooldown;
+        internal int rescueCooldown;
         private bool batchMeltEffects;
         private bool isNewRecord;
         private readonly List<BlockCellInfo> batchedMeltCells = new List<BlockCellInfo>();
@@ -263,7 +263,7 @@ namespace GraviTrix.Core
             return phase == GamePhase.Falling && activePiece != null;
         }
 
-        private void SpawnNextPiece()
+        internal void SpawnNextPiece()
         {
             spawnedPiecesCount++;
             bool activeIsInitial = spawnedPiecesCount <= 4;
