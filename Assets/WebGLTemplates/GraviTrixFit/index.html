@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0, user-scalable=no">
+    <title>{{{ PRODUCT_NAME }}}</title>
+    <style>
+      html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; background: #23164a; }
+      /* The game is laid out for 9:16: fill the window height, or the width on narrow windows, and never scroll. */
+      #unity-canvas {
+        position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+        height: min(100vh, calc(100vw * 16 / 9)); aspect-ratio: 9 / 16;
+        display: block; background: #23164a; outline: none;
+      }
+      #unity-loading { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 40vh; height: 1vh; background: #462c7d; }
+      #unity-progress { width: 0; height: 100%; background: #ffcc33; }
+    </style>
+  </head>
+  <body>
+    <canvas id="unity-canvas" tabindex="-1"></canvas>
+    <div id="unity-loading"><div id="unity-progress"></div></div>
+    <script src="Build/{{{ LOADER_FILENAME }}}"></script>
+    <script>
+      createUnityInstance(document.querySelector("#unity-canvas"), {
+        arguments: [],
+        dataUrl: "Build/{{{ DATA_FILENAME }}}",
+        frameworkUrl: "Build/{{{ FRAMEWORK_FILENAME }}}",
+#if USE_THREADS
+        workerUrl: "Build/{{{ WORKER_FILENAME }}}",
+#endif
+#if USE_WASM
+        codeUrl: "Build/{{{ CODE_FILENAME }}}",
+#endif
+#if MEMORY_FILENAME
+        memoryUrl: "Build/{{{ MEMORY_FILENAME }}}",
+#endif
+#if SYMBOLS_FILENAME
+        symbolsUrl: "Build/{{{ SYMBOLS_FILENAME }}}",
+#endif
+        streamingAssetsUrl: "StreamingAssets",
+        companyName: {{{ JSON.stringify(COMPANY_NAME) }}},
+        productName: {{{ JSON.stringify(PRODUCT_NAME) }}},
+        productVersion: {{{ JSON.stringify(PRODUCT_VERSION) }}},
+      }, function (progress) {
+        document.querySelector("#unity-progress").style.width = 100 * progress + "%";
+      }).then(function () {
+        document.querySelector("#unity-loading").style.display = "none";
+      }).catch(function (message) {
+        alert(message);
+      });
+    </script>
+  </body>
+</html>
